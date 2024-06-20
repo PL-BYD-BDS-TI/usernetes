@@ -4,36 +4,36 @@
 ### Version definitions
 # use ./hack/show-latest-commits.sh to get the latest commits
 
-ARG ROOTLESSKIT_COMMIT=v1.1.0
-ARG CONTAINERD_COMMIT=v1.7.3
-ARG CRIO_COMMIT=v1.27.1
+ARG ROOTLESSKIT_COMMIT=v2.1.0
+ARG CONTAINERD_COMMIT=v1.7.18
+ARG CRIO_COMMIT=release-1.31
 
-ARG KUBE_NODE_COMMIT=v1.28.0
+ARG KUBE_NODE_COMMIT=v1.30.2
 
 # Version definitions (cont.)
-ARG SLIRP4NETNS_RELEASE=v1.2.0
-ARG CONMON_RELEASE=2.1.7
-ARG CRUN_RELEASE=1.8.6
-ARG FUSE_OVERLAYFS_RELEASE=v1.12
-ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=1.0.6
-ARG KUBE_MASTER_RELEASE=v1.28.0
+ARG SLIRP4NETNS_RELEASE=v1.3.1
+ARG CONMON_RELEASE=v2.1.12
+ARG CRUN_RELEASE=1.15
+ARG FUSE_OVERLAYFS_RELEASE=v1.13
+ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=1.0.8
+ARG KUBE_MASTER_RELEASE=v1.30.2
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.28.0
-ARG CNI_PLUGINS_RELEASE=v1.3.0
-ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.2.0
-ARG FLANNEL_RELEASE=v0.22.1
-ARG ETCD_RELEASE=v3.5.9
-ARG CFSSL_RELEASE=1.6.4
+ARG KUBE_GIT_VERSION=v1.30.2
+ARG CNI_PLUGINS_RELEASE=v1.5.0
+ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.4.1-flannel1
+ARG FLANNEL_RELEASE=v0.25.3
+ARG ETCD_RELEASE=v3.5.14
+ARG CFSSL_RELEASE=1.6.5
 
-ARG ALPINE_RELEASE=3.18
-ARG GO_RELEASE=1.21
-ARG FEDORA_RELEASE=38
+ARG ALPINE_RELEASE=3.20
+ARG GO_RELEASE=1.22
+ARG FEDORA_RELEASE=40
 
 ### Common base images (common-*)
 FROM alpine:${ALPINE_RELEASE} AS common-alpine
 RUN apk add -q --no-cache git build-base autoconf automake libtool wget
 
-FROM golang:${GO_RELEASE}-alpine AS common-golang-alpine
+FROM golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
 RUN apk add -q --no-cache git
 
 FROM common-golang-alpine AS common-golang-alpine-heavy
@@ -47,8 +47,8 @@ ARG ROOTLESSKIT_COMMIT
 RUN git pull && git checkout ${ROOTLESSKIT_COMMIT}
 ENV CGO_ENABLED=0
 RUN mkdir /out && \
-  go build -o /out/rootlesskit github.com/rootless-containers/rootlesskit/cmd/rootlesskit && \
-  go build -o /out/rootlessctl github.com/rootless-containers/rootlesskit/cmd/rootlessctl
+  go build -o /out/rootlesskit /go/src/github.com/rootless-containers/rootlesskit/cmd/rootlesskit && \
+  go build -o /out/rootlessctl /go/src/github.com/rootless-containers/rootlesskit/cmd/rootlessctl
 
 #### slirp4netns (slirp4netns-build)
 FROM common-alpine AS slirp4netns-build
@@ -80,8 +80,7 @@ RUN git clone https://github.com/containerd/containerd.git /go/src/github.com/co
 WORKDIR /go/src/github.com/containerd/containerd
 ARG CONTAINERD_COMMIT
 RUN git pull && git checkout ${CONTAINERD_COMMIT}
-ENV CGO_ENABLED=0
-RUN make --quiet EXTRA_FLAGS="-buildmode pie" EXTRA_LDFLAGS='-linkmode external -extldflags "-fno-PIC -static"' BUILDTAGS="netgo osusergo static_build no_devmapper no_btrfs no_aufs no_zfs" \
+RUN SHIM_CGO_ENABLED=1 make --quiet EXTRA_FLAGS="-buildmode pie" EXTRA_LDFLAGS='-linkmode external -extldflags "-fno-PIC -static"' BUILDTAGS="netgo osusergo static_build no_devmapper no_btrfs no_aufs no_zfs" \
   bin/containerd bin/containerd-shim-runc-v2 bin/ctr && \
   mkdir /out && cp bin/containerd bin/containerd-shim-runc-v2 bin/ctr /out
 
@@ -93,15 +92,15 @@ WORKDIR /go/src/github.com/cri-o/cri-o
 ARG CRIO_COMMIT
 RUN git pull && git checkout ${CRIO_COMMIT}
 RUN EXTRA_LDFLAGS='-linkmode external -extldflags "-static"' make binaries && \
-  mkdir /out && cp bin/crio bin/crio-status bin/pinns /out
+  mkdir /out && cp bin/crio bin/pinns /out
 
 ### conmon (conmon-build)
 FROM common-golang-alpine-heavy AS conmon-build
 RUN apk add -q --no-cache glib-dev glib-static libseccomp-dev libseccomp-static
 RUN git clone -q https://github.com/containers/conmon.git /go/src/github.com/containers/conmon
 WORKDIR /go/src/github.com/containers/conmon
-ARG CONMON_COMMIT
-RUN git pull && git checkout ${CONMON_COMMIT}
+ARG CONMON_RELEASE
+RUN git pull && git checkout ${CONMON_RELEASE}
 RUN make PKG_CONFIG='pkg-config --static' CFLAGS='-static' LDFLAGS='-s -w -static' && \
   mkdir /out && cp bin/conmon /out
 
