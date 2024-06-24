@@ -18,8 +18,8 @@ jobs:
           make clean
           docker builder prune -a -f
       - name: "Smoke test (containerd)"
-        run: ./hack/smoketest-docker.sh u7s-test-containerd ghcr.io/${{ github.repository }} --cri=containerd
+        run: ./hack/smoketest-docker.sh u7s-test-containerd ghcr.io/$(echo -n ${{ github.repository }} | tr '[:upper:]' '[:lower:]') --cri=containerd
       - name: "Smoke test (CRI-O)"
-        run: ./hack/smoketest-docker.sh u7s-test-crio ghcr.io/${{ github.repository }} --cri=crio
+        run: ./hack/smoketest-docker.sh u7s-test-crio ghcr.io/$(echo -n ${{ github.repository }} | tr '[:upper:]' '[:lower:]') --cri=crio
       - name: "Smoke test (multi-node cluster with Flannel)"
         run: ./hack/smoketest-docker-compose.sh
