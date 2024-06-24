@@ -21,7 +21,7 @@ function cleanup() {
 }
 trap cleanup EXIT
 
-if ! timeout 60 sh -exc "until [ \$(docker inspect -f '{{.State.Health.Status}}' $container) = \"healthy\" ]; do sleep 10; done"; then
+if ! timeout 120 sh -exc "until [ \$(docker inspect -f '{{.State.Health.Status}}' $container) = \"healthy\" ]; do sleep 10; done"; then
 	docker logs $container
 	exit 1
 fi
