@@ -40,7 +40,7 @@ jobs:
         asset_name: SHA256SUMS
         asset_content_type: application/octet-stream
     - name: "Upload SHA256SUMS (artifact)"
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: SHA256SUMS
         path: _artifact/SHA256SUMS
