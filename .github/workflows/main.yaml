@@ -12,7 +12,7 @@ jobs:
         run: sh -xec "uname -a; docker info; cat /proc/cpuinfo; df -h"
       - uses: actions/checkout@v3
       - name: "Make"
-        run: make image
+        run: IMAGE="ghcr.io/$(echo -n ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" make image
       - name: "Clean up (To avoid `node.kubernetes.io/disk-pressure` taint)"
         run: |
           make clean
