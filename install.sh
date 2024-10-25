@@ -461,6 +461,10 @@ if systemctl --user -q is-active u7s-master.target; then
 	kubectl -n kube-system wait --for=condition=ready pod -l k8s-app=kube-dns
 	kubectl get pods -A -o wide
 	set +x
+	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"
+	set -x
+	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin
+	set +x
 fi
 
 INFO "Installation complete."
