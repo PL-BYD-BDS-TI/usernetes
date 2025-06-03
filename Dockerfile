@@ -5,27 +5,27 @@
 # use ./hack/show-latest-commits.sh to get the latest commits
 
 ARG ROOTLESSKIT_COMMIT=v2.3.5
-ARG CONTAINERD_COMMIT=v2.1.0
-ARG CRIO_COMMIT=v1.32.4
+ARG CONTAINERD_COMMIT=v2.1.1
+ARG CRIO_COMMIT=v1.33.0
 
-ARG KUBE_NODE_COMMIT=v1.33.0
+ARG KUBE_NODE_COMMIT=v1.33.1
 
 # Version definitions (cont.)
-ARG SLIRP4NETNS_RELEASE=v1.3.2
+ARG SLIRP4NETNS_RELEASE=v1.3.3
 ARG CONMON_RELEASE=v2.1.13
 ARG CRUN_RELEASE=1.21
 ARG FUSE_OVERLAYFS_RELEASE=v1.15
-ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.5
-ARG KUBE_MASTER_RELEASE=v1.33.0
+ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.6
+ARG KUBE_MASTER_RELEASE=v1.33.1
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.33.0
+ARG KUBE_GIT_VERSION=v1.33.1
 ARG CNI_PLUGINS_RELEASE=v1.7.1
-ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.6.2-flannel1
+ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.7.1-flannel1
 ARG FLANNEL_RELEASE=v0.26.7
-ARG ETCD_RELEASE=v3.5.21
+ARG ETCD_RELEASE=v3.6.0
 ARG CFSSL_RELEASE=1.6.5
 
-ARG ALPINE_RELEASE=3.21
+ARG ALPINE_RELEASE=3.22
 ARG GO_RELEASE=1.24.3
 ARG FEDORA_RELEASE=42
 
@@ -96,7 +96,7 @@ RUN EXTRA_LDFLAGS='-linkmode external -extldflags "-static"' make binaries && \
 
 ### conmon (conmon-build)
 FROM common-golang-alpine-heavy AS conmon-build
-RUN apk add -q --no-cache glib-dev glib-static libseccomp-dev libseccomp-static
+RUN apk add -q --no-cache glib-dev glib-static libseccomp-dev libseccomp-static pcre2-static
 RUN git clone -q https://github.com/containers/conmon.git /go/src/github.com/containers/conmon
 WORKDIR /go/src/github.com/containers/conmon
 ARG CONMON_RELEASE
