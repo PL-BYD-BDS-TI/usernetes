@@ -5,7 +5,6 @@ source $U7S_BASE_DIR/common/common.inc.sh
 # FIXME: no need to nsenter?
 exec $(dirname $0)/nsenter.sh etcd \
 	--data-dir $XDG_DATA_HOME/usernetes/etcd \
-	--enable-v2=true \
 	--name $(hostname -s) \
 	--cert-file=$XDG_CONFIG_HOME/usernetes/master/kubernetes.pem \
 	--key-file=$XDG_CONFIG_HOME/usernetes/master/kubernetes-key.pem \
