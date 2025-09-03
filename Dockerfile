@@ -30,10 +30,10 @@ ARG GO_RELEASE=1.25.0
 ARG FEDORA_RELEASE=42
 
 ### Common base images (common-*)
-FROM alpine:${ALPINE_RELEASE} AS common-alpine
+FROM docker.io/alpine:${ALPINE_RELEASE} AS common-alpine
 RUN apk add -q --no-cache git build-base autoconf automake libtool wget
 
-FROM golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
+FROM docker.io/golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
 RUN apk add -q --no-cache git
 
 FROM common-golang-alpine AS common-golang-alpine-heavy
@@ -181,7 +181,7 @@ COPY --from=etcd-build /out/* /
 COPY --from=cfssl-build /out/* /
 
 #### Test (test-main)
-FROM fedora:${FEDORA_RELEASE} AS test-main
+FROM docker.io/fedora:${FEDORA_RELEASE} AS test-main
 ADD https://raw.githubusercontent.com/AkihiroSuda/containerized-systemd/6ced78a9df65c13399ef1ce41c0bedc194d7cff6/docker-entrypoint.sh /docker-entrypoint.sh
 COPY hack/etc_systemd_system_user@.service.d_delegate.conf /etc/systemd/system/user@.service.d/delegate.conf
 RUN chmod +x /docker-entrypoint.sh && \
