@@ -6,34 +6,34 @@
 
 ARG ROOTLESSKIT_COMMIT=v2.3.5
 ARG CONTAINERD_COMMIT=v2.1.3
-ARG CRIO_COMMIT=v1.33.2
+ARG CRIO_COMMIT=v1.33.4
 
-ARG KUBE_NODE_COMMIT=v1.33.3
+ARG KUBE_NODE_COMMIT=v1.34.0
 
 # Version definitions (cont.)
 ARG SLIRP4NETNS_RELEASE=v1.3.3
 ARG CONMON_RELEASE=v2.1.13
-ARG CRUN_RELEASE=1.22
+ARG CRUN_RELEASE=1.23.1
 ARG FUSE_OVERLAYFS_RELEASE=v1.15
 ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.6
-ARG KUBE_MASTER_RELEASE=v1.33.3
+ARG KUBE_MASTER_RELEASE=v1.34.0
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.33.3
-ARG CNI_PLUGINS_RELEASE=v1.7.1
+ARG KUBE_GIT_VERSION=v1.34.0
+ARG CNI_PLUGINS_RELEASE=v1.8.0
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.7.1-flannel2
-ARG FLANNEL_RELEASE=v0.27.2
-ARG ETCD_RELEASE=v3.6.3
+ARG FLANNEL_RELEASE=v0.27.3
+ARG ETCD_RELEASE=v3.6.4
 ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.22
-ARG GO_RELEASE=1.24.5
+ARG GO_RELEASE=1.25.0
 ARG FEDORA_RELEASE=42
 
 ### Common base images (common-*)
-FROM alpine:${ALPINE_RELEASE} AS common-alpine
+FROM docker.io/alpine:${ALPINE_RELEASE} AS common-alpine
 RUN apk add -q --no-cache git build-base autoconf automake libtool wget
 
-FROM golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
+FROM docker.io/golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
 RUN apk add -q --no-cache git
 
 FROM common-golang-alpine AS common-golang-alpine-heavy
@@ -181,7 +181,7 @@ COPY --from=etcd-build /out/* /
 COPY --from=cfssl-build /out/* /
 
 #### Test (test-main)
-FROM fedora:${FEDORA_RELEASE} AS test-main
+FROM docker.io/fedora:${FEDORA_RELEASE} AS test-main
 ADD https://raw.githubusercontent.com/AkihiroSuda/containerized-systemd/6ced78a9df65c13399ef1ce41c0bedc194d7cff6/docker-entrypoint.sh /docker-entrypoint.sh
 COPY hack/etc_systemd_system_user@.service.d_delegate.conf /etc/systemd/system/user@.service.d/delegate.conf
 RUN chmod +x /docker-entrypoint.sh && \
