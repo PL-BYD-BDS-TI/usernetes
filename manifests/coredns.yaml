@@ -107,7 +107,7 @@ spec:
         kubernetes.io/os: linux
       containers:
       - name: coredns
-        image: coredns/coredns:1.14.0
+        image: coredns/coredns:1.14.2
         imagePullPolicy: IfNotPresent
         resources:
           limits:
