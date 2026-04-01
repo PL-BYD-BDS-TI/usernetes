@@ -12,7 +12,7 @@ fi
 parent_ip=$(cat $XDG_RUNTIME_DIR/usernetes/parent_ip)
 
 exec flanneld \
-	--iface "tap0" \
+	--iface-can-reach "$parent_ip" \
 	--ip-masq \
 	--public-ip "$parent_ip" \
 	--etcd-endpoints https://$(cat $XDG_CONFIG_HOME/usernetes/node/master):2379 \

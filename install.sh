@@ -42,7 +42,7 @@ cri="containerd"
 cni=""
 publish=""
 publish_default="0.0.0.0:6443:6443/tcp"
-cidr="10.0.42.0/24"
+#cidr="10.0.42.0/24"
 delay=""
 wait_init_certs=""
 function usage() {
@@ -53,7 +53,7 @@ function usage() {
 	echo "  --cri=RUNTIME       Specify CRI runtime, \"containerd\" or \"crio\". (Default: \"$cri\")"
 	echo '  --cni=RUNTIME       Specify CNI, an empty string (none) or "flannel". (Default: none)'
 	echo "  -p, --publish=PORT  Publish ports in RootlessKit's network namespace, e.g. \"0.0.0.0:10250:10250/tcp\". Can be specified multiple times. (Default: \"${publish_default}\")"
-	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
+#	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
 	echo
 	echo "Examples:"
 	echo "  # The default options"
@@ -69,7 +69,8 @@ function usage() {
 }
 
 set +e
-args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,cidr:,,delay:,wait-init-certs -n $arg0 -- "$@")
+#args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,cidr:,,delay:,wait-init-certs -n $arg0 -- "$@")
+args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,,delay:,wait-init-certs -n $arg0 -- "$@")
 getopt_status=$?
 set -e
 if [ $getopt_status != 0 ]; then
@@ -116,10 +117,10 @@ while true; do
 		esac
 		shift 2
 		;;
-	--cidr)
-		cidr="$2"
-		shift 2
-		;;
+	# --cidr)
+	# 	cidr="$2"
+	# 	shift 2
+	# 	;;
 	--delay)
 		# HIDDEN FLAG. DO NO SPECIFY MANUALLY.
 		delay="$2"
@@ -188,11 +189,12 @@ if [ "$cni" = "flannel" ]; then
 U7S_FLANNEL=1
 EOF
 fi
-if [ -n "$cidr" ]; then
-	cat <<EOF >>${config_dir}/usernetes/env
-U7S_ROOTLESSKIT_FLAGS=--cidr=${cidr}
-EOF
-fi
+# if [ -n "$cidr" ]; then
+# 	cat <<EOF >>${config_dir}/usernetes/env
+# U7S_ROOTLESSKIT_FLAGS=--cidr=${cidr}
+# EOF
+# fi
+U7S_ROOTLESSKIT_FLAGS=
 
 if [[ -n "$wait_init_certs" ]]; then
 	max_trial=300

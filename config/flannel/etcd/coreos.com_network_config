@@ -1,1 +1,1 @@
-{"Network": "10.5.0.0/16", "Backend": {"Type": "vxlan"}}
+{"Network": "10.5.0.0/16", "Backend": {"Type": "wireguard"}}
