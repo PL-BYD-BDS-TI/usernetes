@@ -38,7 +38,7 @@ if [[ $_U7S_CHILD == 0 ]]; then
 	# * /opt: copy-up is required for mounting /opt/cni/bin
 	rootlesskit \
 		--state-dir $rk_state_dir \
-		--net=slirp4netns --mtu=65520 --disable-host-loopback --slirp4netns-sandbox=true --slirp4netns-seccomp=true \
+		--net=lxc-user-nic \
 		--port-driver=builtin \
 		--copy-up=/etc --copy-up=/run --copy-up=/var/lib --copy-up=/opt \
 		--cgroupns \
@@ -52,6 +52,7 @@ if [[ $_U7S_CHILD == 0 ]]; then
 else
 	# save IP address
 	echo $U7S_PARENT_IP >$XDG_RUNTIME_DIR/usernetes/parent_ip
+	hostname -I >$XDG_RUNTIME_DIR/usernetes/child_ip
 
 	# Remove symlinks so that the child won't be confused by the parent configuration
 	rm -f \
