@@ -27,7 +27,7 @@ ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.23
 ARG GO_RELEASE=1.26.3
-ARG FEDORA_RELEASE=44
+ARG FEDORA_RELEASE=45
 
 ### Common base images (common-*)
 FROM docker.io/alpine:${ALPINE_RELEASE} AS common-alpine
