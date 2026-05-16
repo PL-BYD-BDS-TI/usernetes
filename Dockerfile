@@ -20,6 +20,7 @@ ARG KUBE_MASTER_RELEASE=v1.36.1
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
 ARG KUBE_GIT_VERSION=v1.36.1
 ARG CNI_PLUGINS_RELEASE=v1.9.1
+ARG CILIUM_RELEASE=v1.19.4
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel1
 ARG FLANNEL_RELEASE=v0.28.4
 ARG ETCD_RELEASE=v3.6.11
@@ -37,7 +38,7 @@ FROM docker.io/golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alp
 RUN apk add -q --no-cache git
 
 FROM common-golang-alpine AS common-golang-alpine-heavy
-RUN apk -q --no-cache add bash build-base linux-headers libseccomp-dev libseccomp-static
+RUN apk -q --no-cache add bash build-base linux-headers libseccomp-dev libseccomp-static gcc
 
 ### RootlessKit (rootlesskit-build)
 FROM common-golang-alpine AS rootlesskit-build
@@ -114,6 +115,14 @@ ARG FLANNEL_CNI_PLUGIN_RELEASE
 RUN wget -q -O /out/cni/flannel https://github.com/flannel-io/cni-plugin/releases/download/${FLANNEL_CNI_PLUGIN_RELEASE}/flannel-amd64 && \
   chmod +x /out/cni/flannel
 
+### cilium-cni (cilium-cni-build)
+FROM common-golang-alpine-heavy AS cilium-cni-build
+RUN git clone -q https://github.com/cilium/cilium.git /go/src/github.com/cilium/cilium
+WORKDIR /go/src/github.com/cilium/cilium/plugins/cilium-cni
+ARG CILIUM_RELEASE
+RUN git pull && git checkout ${CILIUM_RELEASE} && mkdir /out
+RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-cni
+
 ### Kubernetes master (kube-master-build)
 FROM common-alpine AS kube-master-build
 ARG KUBE_MASTER_RELEASE
@@ -174,6 +183,7 @@ COPY --from=crio-build /out/* /
 COPY --from=conmon-build /out/* /
 # can't use wildcard here: https://github.com/rootless-containers/usernetes/issues/78
 COPY --from=cniplugins-build /out/cni /cni
+COPY --from=cilium-cni-build /out/cilium-cni /cni/cilium-cni
 COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
