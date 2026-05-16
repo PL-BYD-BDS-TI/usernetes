@@ -21,6 +21,23 @@ print(versions[-1])
 ')
 }
 
+z() {
+	NAME=$1
+	REPO=$2
+	echo $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
+import fileinput
+import re
+from packaging.version import Version
+versions = list()
+for line in fileinput.input():
+    line = line.strip()
+    if (re.match(r"^v?\d+\.\d+\.\d+$", line)):
+        versions.append(line)
+versions.sort(key=Version)
+print(versions[-1])
+')
+}
+
 y ROOTLESSKIT_COMMIT rootless-containers/rootlesskit
 y CONTAINERD_COMMIT containerd/containerd
 x CRIO_COMMIT cri-o/cri-o
@@ -35,6 +52,7 @@ x CONTAINERD_FUSE_OVERLAYFS_RELEASE containerd/fuse-overlayfs-snapshotter
 y KUBE_MASTER_RELEASE kubernetes/kubernetes
 y KUBE_GIT_VERSION kubernetes/kubernetes
 x CNI_PLUGINS_RELEASE containernetworking/plugins
+z CILIUM_RELEASE cilium/cilium
 y FLANNEL_CNI_PLUGIN_RELEASE flannel-io/cni-plugin
 x FLANNEL_RELEASE flannel-io/flannel
 x ETCD_RELEASE etcd-io/etcd
