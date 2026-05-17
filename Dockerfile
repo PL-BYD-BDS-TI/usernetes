@@ -115,13 +115,16 @@ ARG FLANNEL_CNI_PLUGIN_RELEASE
 RUN wget -q -O /out/cni/flannel https://github.com/flannel-io/cni-plugin/releases/download/${FLANNEL_CNI_PLUGIN_RELEASE}/flannel-amd64 && \
   chmod +x /out/cni/flannel
 
-### cilium-cni (cilium-cni-build)
-FROM common-golang-alpine-heavy AS cilium-cni-build
+### cilium (cilium-build)
+FROM common-golang-alpine-heavy AS cilium-build
 RUN git clone -q https://github.com/cilium/cilium.git /go/src/github.com/cilium/cilium
-WORKDIR /go/src/github.com/cilium/cilium/plugins/cilium-cni
-ARG CILIUM_RELEASE
+WORKDIR /go/src/github.com/cilium/cilium
 RUN git pull && git checkout ${CILIUM_RELEASE} && mkdir /out
+ARG CILIUM_RELEASE
+WORKDIR /go/src/github.com/cilium/cilium/plugins/cilium-cni
 RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-cni
+WORKDIR /go/src/github.com/cilium/cilium/daemon
+RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-agent
 
 ### Kubernetes master (kube-master-build)
 FROM common-alpine AS kube-master-build
@@ -183,7 +186,8 @@ COPY --from=crio-build /out/* /
 COPY --from=conmon-build /out/* /
 # can't use wildcard here: https://github.com/rootless-containers/usernetes/issues/78
 COPY --from=cniplugins-build /out/cni /cni
-COPY --from=cilium-cni-build /out/cilium-cni /cni/cilium-cni
+COPY --from=cilium-build /out/cilium-agent /cilium-agent
+COPY --from=cilium-build /out/cilium-cni /cni/cilium-cni
 COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
