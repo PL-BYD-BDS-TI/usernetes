@@ -208,8 +208,7 @@ RUN chmod +x /docker-entrypoint.sh && \
   chown -R user:user /home/user && \
   rm -rf /tmp/*
 COPY --chown=user:user . /home/user/usernetes
-#COPY --from=bin-main --chown=user:user / /home/user/usernetes/bin
-COPY --chown=user:user bin /home/user/usernetes/bin
+COPY --from=bin-main --chown=user:user / /home/user/usernetes/bin
 RUN ln -sf /home/user/usernetes/boot/docker-unsudo.sh /usr/local/bin/unsudo
 VOLUME /home/user/.local
 VOLUME /home/user/.config
