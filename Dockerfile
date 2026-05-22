@@ -28,7 +28,7 @@ ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.23
 ARG GO_RELEASE=1.26.3
-ARG FEDORA_RELEASE=44
+ARG UBUNTU_RELEASE=resolute
 
 ### Common base images (common-*)
 FROM docker.io/alpine:${ALPINE_RELEASE} AS common-alpine
@@ -195,21 +195,21 @@ COPY --from=etcd-build /out/* /
 COPY --from=cfssl-build /out/* /
 
 #### Test (test-main)
-FROM docker.io/fedora:${FEDORA_RELEASE} AS test-main
+FROM docker.io/ubuntu:${UBUNTU_RELEASE} AS test-main
 ADD https://raw.githubusercontent.com/AkihiroSuda/containerized-systemd/6ced78a9df65c13399ef1ce41c0bedc194d7cff6/docker-entrypoint.sh /docker-entrypoint.sh
 COPY hack/etc_systemd_system_user@.service.d_delegate.conf /etc/systemd/system/user@.service.d/delegate.conf
 RUN chmod +x /docker-entrypoint.sh && \
-# As of Feb 2020, Fedora has wrong permission bits on newuidmap and newgidmap.
-  chmod +s /usr/bin/newuidmap /usr/bin/newgidmap && \
-  dnf install -q -y conntrack findutils fuse3 git iproute iptables hostname procps-ng time which \
-# systemd-container: for machinectl
+  apt-get update -y && \
+  apt-get install -q -y conntrack fuse3 git iptables nftables time which \
   systemd-container && \
+  userdel ubuntu && \
   useradd --create-home --home-dir /home/user --uid 1000 -G systemd-journal user && \
   mkdir -p /home/user/.local /home/user/.config/usernetes && \
   chown -R user:user /home/user && \
   rm -rf /tmp/*
 COPY --chown=user:user . /home/user/usernetes
-COPY --from=bin-main --chown=user:user / /home/user/usernetes/bin
+#COPY --from=bin-main --chown=user:user / /home/user/usernetes/bin
+COPY --chown=user:user bin /home/user/usernetes/bin
 RUN ln -sf /home/user/usernetes/boot/docker-unsudo.sh /usr/local/bin/unsudo
 VOLUME /home/user/.local
 VOLUME /home/user/.config

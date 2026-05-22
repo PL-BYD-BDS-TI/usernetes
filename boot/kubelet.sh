@@ -22,7 +22,7 @@ featureGates:
   KubeletInUserNamespace: true
 evictionHard:
   nodefs.available: "3%"
-localStorageCapacityIsolation: false
+localStorageCapacityIsolation: true
 cgroupDriver: "cgroupfs"
 cgroupsPerQOS: true
 enforceNodeAllocatable: []
@@ -36,5 +36,4 @@ exec $(dirname $0)/nsenter.sh kubelet \
 	$@
 
 # Notes
-# evictrionHard: Relax disk pressure taint for CI
-# localStorageCapacityIsolation=false: workaround for "Failed to start ContainerManager failed to get rootfs info" error on Fedora 32: https://github.com/rootless-containers/usernetes/pull/157#issuecomment-621008594
+# evictionHard: Relax disk pressure taint for CI
