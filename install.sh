@@ -38,8 +38,8 @@ set -u
 ### Parse args
 arg0=$0
 start="u7s.target"
-cri="containerd"
-cni=""
+cri="crio"
+cni="flannel"
 publish=""
 publish_default="0.0.0.0:6443:6443/tcp"
 #cidr="10.0.42.0/24"
@@ -50,8 +50,8 @@ function usage() {
 	echo "Install Usernetes systemd units to ${config_dir}/systemd/unit ."
 	echo
 	echo "  --start=UNIT        Enable and start the specified target after the installation, e.g. \"u7s.target\". Set to an empty to disable autostart. (Default: \"$start\")"
-	echo "  --cri=RUNTIME       Specify CRI runtime, \"containerd\" or \"crio\". (Default: \"$cri\")"
-	echo '  --cni=RUNTIME       Specify CNI, an empty string (none) or "flannel". (Default: none)'
+	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
+	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
 	echo "  -p, --publish=PORT  Publish ports in RootlessKit's network namespace, e.g. \"0.0.0.0:10250:10250/tcp\". Can be specified multiple times. (Default: \"${publish_default}\")"
 #	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
 	echo
@@ -59,8 +59,8 @@ function usage() {
 	echo "  # The default options"
 	echo "  ${arg0}"
 	echo
-	echo "  # Use CRI-O as the CRI runtime"
-	echo "  ${arg0} --cri=crio"
+	echo "  # Use containerd as the CRI runtime"
+	echo "  ${arg0} --cri=containerd"
 	echo
 	echo 'Use `uninstall.sh` for uninstallation.'
 	echo 'For an example of multi-node cluster with flannel, see docker-compose.yaml'

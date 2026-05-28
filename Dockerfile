@@ -20,7 +20,8 @@ ARG KUBE_MASTER_RELEASE=v1.36.1
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
 ARG KUBE_GIT_VERSION=v1.36.1
 ARG CNI_PLUGINS_RELEASE=v1.9.1
-ARG CILIUM_RELEASE=v1.19.4
+# ARG CILIUM_RELEASE=v1.19.4
+# ARG CALICO_RELEASE=v3.32.0
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel1
 ARG FLANNEL_RELEASE=v0.28.4
 ARG ETCD_RELEASE=v3.6.11
@@ -115,16 +116,16 @@ ARG FLANNEL_CNI_PLUGIN_RELEASE
 RUN wget -q -O /out/cni/flannel https://github.com/flannel-io/cni-plugin/releases/download/${FLANNEL_CNI_PLUGIN_RELEASE}/flannel-amd64 && \
   chmod +x /out/cni/flannel
 
-### cilium (cilium-build)
-FROM common-golang-alpine-heavy AS cilium-build
-RUN git clone -q https://github.com/cilium/cilium.git /go/src/github.com/cilium/cilium
-WORKDIR /go/src/github.com/cilium/cilium
-RUN git pull && git checkout ${CILIUM_RELEASE} && mkdir /out
-ARG CILIUM_RELEASE
-WORKDIR /go/src/github.com/cilium/cilium/plugins/cilium-cni
-RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-cni
-WORKDIR /go/src/github.com/cilium/cilium/daemon
-RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-agent
+# ### cilium (cilium-build)
+# FROM common-golang-alpine-heavy AS cilium-build
+# RUN git clone -q https://github.com/cilium/cilium.git /go/src/github.com/cilium/cilium
+# WORKDIR /go/src/github.com/cilium/cilium
+# RUN git pull && git checkout ${CILIUM_RELEASE} && mkdir /out
+# ARG CILIUM_RELEASE
+# WORKDIR /go/src/github.com/cilium/cilium/plugins/cilium-cni
+# RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-cni
+# WORKDIR /go/src/github.com/cilium/cilium/daemon
+# RUN CGO_ENABLED=1 GOARCH=amd64 go build -mod=vendor -ldflags '-s -w -linkmode external -extldflags "-static"' -tags=osusergo -o /out/cilium-agent
 
 ### Kubernetes master (kube-master-build)
 FROM common-alpine AS kube-master-build
@@ -174,6 +175,9 @@ RUN mkdir -p /out && \
   wget -q -O /out/cfssljson https://github.com/cloudflare/cfssl/releases/download/v${CFSSL_RELEASE}/cfssljson_${CFSSL_RELEASE}_linux_amd64 && \
   chmod +x /out/cfssljson
 
+# #### calico
+# FROM docker.io/calico/node:${CALICO_RELEASE} AS calico
+
 ### Binaries (bin-main)
 FROM scratch AS bin-main
 COPY --from=rootlesskit-build /out/* /
@@ -186,13 +190,14 @@ COPY --from=crio-build /out/* /
 COPY --from=conmon-build /out/* /
 # can't use wildcard here: https://github.com/rootless-containers/usernetes/issues/78
 COPY --from=cniplugins-build /out/cni /cni
-COPY --from=cilium-build /out/cilium-agent /cilium-agent
-COPY --from=cilium-build /out/cilium-cni /cni/cilium-cni
+# COPY --from=cilium-build /out/cilium-agent /cilium-agent
+# COPY --from=cilium-build /out/cilium-cni /cni/cilium-cni
 COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
 COPY --from=etcd-build /out/* /
 COPY --from=cfssl-build /out/* /
+# COPY --from=calico /bin/calico-node /calico-node
 
 #### Test (test-main)
 FROM docker.io/ubuntu:${UBUNTU_RELEASE} AS test-main

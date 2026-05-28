@@ -4,3 +4,4 @@ _artifact/
 *.pem
 *.csr
 *.kubeconfig
+lib/
