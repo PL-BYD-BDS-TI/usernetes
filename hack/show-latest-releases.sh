@@ -55,7 +55,7 @@ x CNI_PLUGINS_RELEASE containernetworking/plugins
 z CILIUM_RELEASE cilium/cilium
 y FLANNEL_CNI_PLUGIN_RELEASE flannel-io/cni-plugin
 x FLANNEL_RELEASE flannel-io/flannel
-x ETCD_RELEASE etcd-io/etcd
+z ETCD_RELEASE etcd-io/etcd
 x CFSSL_RELEASE cloudflare/cfssl
 
 # echo ALPINE_RELEASE=
