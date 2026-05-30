@@ -7,6 +7,7 @@ cat >$XDG_RUNTIME_DIR/usernetes/kube-proxy-config.yaml <<EOF
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 mode: "nftables"
+clusterCIDR: "10.0.0.0/24"
 clientConnection:
   kubeconfig: "$XDG_CONFIG_HOME/usernetes/node/kube-proxy.kubeconfig"
 conntrack:
