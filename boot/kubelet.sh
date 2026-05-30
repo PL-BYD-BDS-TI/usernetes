@@ -26,6 +26,7 @@ localStorageCapacityIsolation: true
 cgroupDriver: "cgroupfs"
 cgroupsPerQOS: true
 enforceNodeAllocatable: []
+hairpinMode: hairpin-veth
 EOF
 
 exec $(dirname $0)/nsenter.sh kubelet \
