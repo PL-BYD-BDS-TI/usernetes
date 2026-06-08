@@ -3,7 +3,7 @@
 export U7S_BASE_DIR=$(realpath $(dirname $0)/..)
 source $U7S_BASE_DIR/common/common.inc.sh
 
-export _CRIO_ROOTLESS=1
+# export _CRIO_ROOTLESS=1
 
 mkdir -p $XDG_CONFIG_HOME/usernetes/crio $XDG_CONFIG_HOME/usernetes/containers/oci/hooks.d
 
@@ -29,8 +29,8 @@ cat >$XDG_CONFIG_HOME/usernetes/crio/crio.conf <<EOF
   [crio.image]
     signature_policy = "$XDG_CONFIG_HOME/usernetes/containers/policy.json"
   [crio.runtime]
-    conmon = "$U7S_BASE_DIR/bin/conmon"
-    conmon_cgroup = "pod"
+    monitor_path = "$U7S_BASE_DIR/bin/conmon"
+    monitor_cgroup = "pod"
     hooks_dir = ["$XDG_DATA_HOME/usernetes/containers/oci/hooks.d"]
     container_exits_dir = "$XDG_RUNTIME_DIR/usernetes/crio/exits"
     container_attach_socket_dir = "$XDG_RUNTIME_DIR/usernetes/crio"
