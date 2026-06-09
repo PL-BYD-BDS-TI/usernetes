@@ -92,7 +92,7 @@ RUN apk add -q --no-cache gpgme gpgme-dev
 RUN git clone -q https://github.com/cri-o/cri-o.git /go/src/github.com/cri-o/cri-o
 WORKDIR /go/src/github.com/cri-o/cri-o
 ARG CRIO_COMMIT
-RUN git pull && git checkout ${CRIO_COMMIT}
+RUN git pull && git checkout ${CRIO_COMMIT} && sed -i 's/g\.SetLinuxCgroupsPath("")//' server/rootless_linux.go
 RUN EXTRA_LDFLAGS='-linkmode external -extldflags "-static"' make binaries && \
   mkdir /out && cp bin/crio bin/pinns /out
 
