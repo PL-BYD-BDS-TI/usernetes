@@ -125,3 +125,11 @@ export PATH
 : ${XDG_CONFIG_HOME=$HOME/.config}
 : ${XDG_CACHE_HOME=$HOME/.cache}
 export XDG_DATA_HOME XDG_CONFIG_HOME XDG_CACHE_HOME
+
+# export original host IP
+if hostname -I &>/dev/null ; then
+        : ${U7S_PARENT_IP=$(hostname -I | sed -e 's/ .*//g')}
+else
+        : ${U7S_PARENT_IP=$(hostname -i | sed -e 's/ .*//g')}
+fi
+export U7S_PARENT_IP

@@ -211,12 +211,13 @@ elif [[ ! -d ${config_dir}/usernetes/master ]]; then
 	### If the keys are not generated yet, generate them for the single-node cluster
 	INFO "Generating single-node cluster TLS keys (${config_dir}/usernetes/{master,node})"
 	cfssldir=$(mktemp -d /tmp/cfssl.XXXXXXXXX)
-	master=127.0.0.1
-	node=$(hostname)
-	${base}/common/cfssl.sh --dir=${cfssldir} --master=$master --node=$node,127.0.0.1
+	ip=$(hostname -I | cut -d' ' -f1)
+	hostname=$(hostname -s)
+	${base}/common/cfssl.sh --dir=${cfssldir} --master=$hostname --node=$hostname,$ip
 	rm -rf ${config_dir}/usernetes/{master,node}
 	cp -r "${cfssldir}/master" ${config_dir}/usernetes/master
 	cp -r "${cfssldir}/nodes.$node" ${config_dir}/usernetes/node
+	cp -r "${cfssldir}/peer" ${config_dir}/usernetes/peer
 	rm -rf "${cfssldir}"
 fi
 
