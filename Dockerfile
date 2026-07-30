@@ -4,11 +4,11 @@
 ### Version definitions
 # use ./hack/show-latest-commits.sh to get the latest commits
 
-ARG ROOTLESSKIT_COMMIT=v3.0.1
+ARG ROOTLESSKIT_COMMIT=v3.0.2
 ARG CONTAINERD_COMMIT=v2.3.3
 ARG CRIO_COMMIT=v1.36.2
 
-ARG KUBE_NODE_COMMIT=v1.36.2
+ARG KUBE_NODE_COMMIT=v1.36.3
 
 # Version definitions (cont.)
 ARG SLIRP4NETNS_RELEASE=v1.3.4
@@ -16,15 +16,15 @@ ARG CONMON_RELEASE=v2.2.1
 ARG CRUN_RELEASE=1.28
 ARG FUSE_OVERLAYFS_RELEASE=v1.17
 ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.7
-ARG KUBE_MASTER_RELEASE=v1.36.2
+ARG KUBE_MASTER_RELEASE=v1.36.3
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.36.2
+ARG KUBE_GIT_VERSION=v1.36.3
 ARG CNI_PLUGINS_RELEASE=v1.9.1
-# ARG CILIUM_RELEASE=v1.19.5
+# ARG CILIUM_RELEASE=v1.19.6
 # ARG CALICO_RELEASE=v3.32.0
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel2
-ARG FLANNEL_RELEASE=v0.28.7
-ARG ETCD_RELEASE=v3.7.0
+ARG FLANNEL_RELEASE=v0.28.8
+ARG ETCD_RELEASE=v3.7.1
 ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.24
@@ -164,7 +164,7 @@ FROM common-alpine AS etcd-build
 ARG ETCD_RELEASE
 RUN mkdir /tmp-etcd /out && \
   wget -q -O - https://github.com/etcd-io/etcd/releases/download/${ETCD_RELEASE}/etcd-${ETCD_RELEASE}-linux-amd64.tar.gz | tar xz -C /tmp-etcd && \
-  cp /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcd /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdctl /out
+  cp /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcd /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdctl /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdutl /out
 
 #### cfssl (cfssl-build)
 FROM common-alpine AS cfssl-build

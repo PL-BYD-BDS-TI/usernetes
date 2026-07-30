@@ -158,8 +158,13 @@ fi
 # The Service Account Key Pair
 cfssl_gencert_master "service-account"
 
+peers=
 # Nodes
 for n in "${nodes[@]}"; do
+	if [[ -n "$peers" ]]; then
+		peers=','
+	fi
+	peers+="$n"
 	nodename=$(echo $n | sed -e 's/,.*//g')
 	node_d="${dir}/nodes.${nodename}"
 	mkdir -p "${node_d}"
@@ -189,11 +194,10 @@ for n in "${nodes[@]}"; do
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "PL",
+      "L": "Bydgoszcz",
       "O": "system:nodes",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The Hard Way"
     }
   ]
 }
@@ -214,5 +218,38 @@ EOF
 	# DONE
 	touch ${node_d}/done
 done
+
+# Key and certificate for etcd peers
+mkdir -p peer
+if [[ -f 'peer/peer.pem' ]]; then
+	log::info "Already exists: peer/peer.pem"
+else
+	log::info "Creating peer/{peer.pem,peer-key.pem}"
+	cat >peer/peer-csr.json <<EOF
+{
+  "CN": "system:etcd-peer",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "PL",
+      "L": "Bydgoszcz",
+      "O": "system:etcd-peer",
+      "OU": "Kubernetes The Hard Way"
+    }
+  ]
+}
+EOF
+cfssl gencert -loglevel="$loglevel" \
+	-ca="${master_d}/ca.pem" \
+	-ca-key="${master_d}/ca-key.pem" \
+	-config="$cc/ca-config.json" \
+	-hostname="$peers" \
+	-profile=kubernetes \
+	peer/peer-csr.json | cfssljson -bare peer/peer
+touch peer/done
+
 # DONE
 touch ${master_d}/done

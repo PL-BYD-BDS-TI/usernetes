@@ -15,10 +15,10 @@ exec flanneld \
 	--iface-can-reach "$parent_ip" \
 	--ip-masq \
 	--public-ip "$parent_ip" \
-	--etcd-endpoints https://$(cat $XDG_CONFIG_HOME/usernetes/node/master):2379 \
+	--etcd-endpoints "$ETCD_ENDPOINTS" \
 	--etcd-cafile "$XDG_CONFIG_HOME/usernetes/master/ca.pem" \
-	--etcd-certfile "$XDG_CONFIG_HOME/usernetes/master/kubernetes.pem" \
-	--etcd-keyfile "$XDG_CONFIG_HOME/usernetes/master/kubernetes-key.pem" \
+	--etcd-certfile "$XDG_CONFIG_HOME/usernetes/node/node.pem" \
+	--etcd-keyfile "$XDG_CONFIG_HOME/usernetes/node/node-key.pem" \
 	$@
 
 # FIXME: nodes should not require the master key.
