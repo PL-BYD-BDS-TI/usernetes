@@ -241,22 +241,11 @@ LimitNOFILE=65536
 cat <<EOF | x u7s.target
 [Unit]
 Description=Usernetes target (all components in the single node)
-Requires=u7s-master-with-etcd.target u7s-node.target
-After=u7s-master-with-etcd.target u7s-node.target
+Requires=u7s-etcd.target u7s-master.target u7s-node.target
+After=u7s-etcd.target u7s-master.target u7s-node.target
 
 [Install]
 WantedBy=default.target
-EOF
-
-cat <<EOF | x u7s-master-with-etcd.target
-[Unit]
-Description=Usernetes target for Kubernetes master components (including etcd)
-Requires=u7s-etcd.target u7s-master.target
-After=u7s-etcd.target u7s-master.target
-PartOf=u7s.target
-
-[Install]
-WantedBy=u7s.target
 EOF
 
 ### RootlessKit
@@ -291,20 +280,17 @@ cat <<EOF | x u7s-etcd.target
 Description=Usernetes target for etcd
 Requires=u7s-etcd.service
 After=u7s-etcd.service
-PartOf=u7s-master-with-etcd.target
 EOF
 
 cat <<EOF | x u7s-etcd.service
 [Unit]
 Description=Usernetes etcd service
-BindsTo=u7s-rootlesskit.service
 PartOf=u7s-etcd.target
 
 [Service]
 Type=notify
 NotifyAccess=all
 ExecStart=${base}/boot/etcd.sh
-ExecStartPost=${base}/boot/etcd-init-data.sh
 ${service_common}
 EOF
 
@@ -316,10 +302,9 @@ cat <<EOF | x u7s-master.target
 Description=Usernetes target for Kubernetes master components
 Requires=u7s-kube-apiserver.service u7s-kube-controller-manager.service u7s-kube-scheduler.service
 After=u7s-kube-apiserver.service u7s-kube-controller-manager.service u7s-kube-scheduler.service
-PartOf=u7s-master-with-etcd.target
 
 [Install]
-WantedBy=u7s-master-with-etcd.target
+WantedBy=u7s.target
 EOF
 
 cat <<EOF | x u7s-kube-apiserver.service
@@ -423,9 +408,12 @@ EOF
 [Unit]
 Description=Usernetes flanneld service
 BindsTo=u7s-rootlesskit.service
+Requires=u7s-etcd.service
+After=u7s-etcd.service
 PartOf=u7s-node.target
 
 [Service]
+ExecStartPre=${base}/boot/etcd-init-data.sh
 ExecStart=${base}/boot/flanneld.sh
 ${service_common}
 EOF
