@@ -1,5 +1,5 @@
 {
-  "CN": "u7s-kube-scheduler",
+  "CN": "system:kube-scheduler",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -8,7 +8,7 @@
     {
       "C": "PL",
       "L": "Bydgoszcz",
-      "O": "u7s-kube-scheduler",
+      "O": "system:kube-scheduler",
       "OU": "Kubernetes The Hard Way"
     }
   ]

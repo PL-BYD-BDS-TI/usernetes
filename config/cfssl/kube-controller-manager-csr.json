@@ -1,5 +1,5 @@
 {
-  "CN": "u7s-kube-controller-manager",
+  "CN": "system:kube-controller-manager",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -8,7 +8,7 @@
     {
       "C": "PL",
       "L": "Bydgoszcz",
-      "O": "u7s-kube-controller-manager",
+      "O": "system:kube-controller-manager",
       "OU": "Kubernetes The Hard Way"
     }
   ]

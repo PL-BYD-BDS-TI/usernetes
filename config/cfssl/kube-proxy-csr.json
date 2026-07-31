@@ -1,5 +1,5 @@
 {
-  "CN": "u7s-kube-proxy",
+  "CN": "system:kube-proxy",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -8,7 +8,7 @@
     {
       "C": "PL",
       "L": "Bydgoszcz",
-      "O": "u7s-node-proxier",
+      "O": "system:node-proxier",
       "OU": "Kubernetes The Hard Way"
     }
   ]

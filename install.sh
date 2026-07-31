@@ -243,7 +243,7 @@ if [[ -n "$wait_init_certs" ]]; then
 	max_trial=300
 	INFO "Waiting for certs to be created.":
 	for ((i = 0; i < max_trial; i++)); do
-		if [[ -f ${config_dir}/usernetes/node/done || -f ${config_dir}/usernetes/master/done ]]; then
+		if [[ -f ${config_dir}/usernetes/master/done ]]; then
 			echo "OK"
 			break
 		fi
@@ -497,9 +497,9 @@ if systemctl --user -q is-active u7s-master.target; then
 	kubectl -n kube-system wait --for=condition=ready pod -l k8s-app=kube-dns
 	kubectl get pods -A -o wide
 	set +x
-	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'u7s-kubelet-api-admin'"
+	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"
 	set -x
-	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=u7s-kubelet-api-admin
+	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin
 	set +x
 fi
 

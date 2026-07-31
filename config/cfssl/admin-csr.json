@@ -8,7 +8,7 @@
     {
       "C": "PL",
       "L": "Bydgoszcz",
-      "O": "u7s-masters",
+      "O": "system:masters",
       "OU": "Kubernetes The Hard Way"
     }
   ]
