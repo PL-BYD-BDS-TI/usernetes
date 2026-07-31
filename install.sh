@@ -40,6 +40,7 @@ arg0=$0
 start="u7s.target"
 cri="crio"
 cni="flannel"
+db="etcd"
 publish=""
 publish_default="0.0.0.0:6443:6443/tcp"
 #cidr="10.0.42.0/24"
@@ -52,6 +53,7 @@ function usage() {
 	echo "  --start=UNIT        Enable and start the specified target after the installation, e.g. \"u7s.target\". Set to an empty to disable autostart. (Default: \"$start\")"
 	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
 	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
+	echo "  --db=DBTYPE         Specify KV database type, \"etcd\" or \"netsy\". (Default: \"$db\")"
 	echo "  -p, --publish=PORT  Publish ports in RootlessKit's network namespace, e.g. \"0.0.0.0:10250:10250/tcp\". Can be specified multiple times. (Default: \"${publish_default}\")"
 #	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
 	echo
@@ -70,7 +72,7 @@ function usage() {
 
 set +e
 #args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,cidr:,,delay:,wait-init-certs -n $arg0 -- "$@")
-args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,,delay:,wait-init-certs -n $arg0 -- "$@")
+args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,db:,,delay:,wait-init-certs -n $arg0 -- "$@")
 getopt_status=$?
 set -e
 if [ $getopt_status != 0 ]; then
@@ -96,7 +98,7 @@ while true; do
 	--cri)
 		cri="$2"
 		case "$cri" in
-		"" | containerd | crio) ;;
+		containerd | crio) ;;
 
 		*)
 			ERROR "Unknown CRI runtime \"$cri\". Supported values: \"containerd\" (default) \"crio\" \"\"."
@@ -112,6 +114,18 @@ while true; do
 
 		*)
 			ERROR "Unknown CNI \"$cni\". Supported values: \"\" (default) \"flannel\" ."
+			exit 1
+			;;
+		esac
+		shift 2
+		;;
+	--db)
+		db="$2"
+		case "$db" in
+		"etcd" | "netsy") ;;
+
+		*)
+			ERROR "Unknown DB type \"$db\". Supported values: \"etcd\" (default) \"netsy\" \"\"."
 			exit 1
 			;;
 		esac
@@ -167,10 +181,28 @@ fi
 
 # check kernel modules
 for f in $(cat ${base}/config/modules-load.d/usernetes.conf); do
-	if ! grep -qw "^$f" /proc/modules; then
-		WARNING "Kernel module $f not loaded"
+	if grep -qw "^$f" /proc/modules; then
+		INFO "Kernel module $f is loaded"
+	elif grep -qw "${f}.ko$" /lib/modules/$(uname -r)/modules.builtin; then
+		WARNING "Kernel is built with $f"
+	else
+		ERROR "Kernel module $f is not loaded"
+		exit 1
 	fi
 done
+
+if [[ -z "$(which uuidgen)" ]]; then
+	ERROR "uuid-runtime is not installed"
+	exit 1
+fi
+if [[ -z "$(which newuidmap)" ]] || [[ -z "$(which newgidmap)" ]]; then
+	ERROR "uid-map is not installed"
+	exit 1
+fi
+if [[ -z "$(which conntrack)" ]]; then
+	ERROR "conntrack is not installed"
+	exit 1
+fi
 
 # Delay for debugging
 if [[ -n "$delay" ]]; then
@@ -187,6 +219,17 @@ EOF
 if [ "$cni" = "flannel" ]; then
 	cat <<EOF >>${config_dir}/usernetes/env
 U7S_FLANNEL=1
+EOF
+fi
+if [ "$db" = "etcd" ]; then
+	ip=$(hostname -i | sed -e 's/ .*//g')
+	if hostname -I &>/dev/null ; then
+		ip=$(hostname -I | sed -e 's/ .*//g')
+	fi
+	cat <<EOF >>${config_dir}/usernetes/env
+ETCD_INITIAL_CLUSTER="$(hostname -s)=https://${ip}:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="$(uuidgen -n @x500 -N u7s-nodes -s)"
+ETCD_INITIAL_CLUSTER_STATE=new
 EOF
 fi
 # if [ -n "$cidr" ]; then
@@ -213,13 +256,15 @@ elif [[ ! -d ${config_dir}/usernetes/master ]]; then
 	cfssldir=$(mktemp -d /tmp/cfssl.XXXXXXXXX)
 	ip=$(hostname -I | cut -d' ' -f1)
 	hostname=$(hostname -s)
-	${base}/common/cfssl.sh --dir=${cfssldir} --master=$hostname --node=$hostname,$ip
+	${base}/common/cfssl.sh --dir=${cfssldir} --master=$hostname --node=$hostname,$ip,127.0.0.1
 	rm -rf ${config_dir}/usernetes/{master,node}
 	cp -r "${cfssldir}/master" ${config_dir}/usernetes/master
 	cp -r "${cfssldir}/nodes.$node" ${config_dir}/usernetes/node
-	cp -r "${cfssldir}/peer" ${config_dir}/usernetes/peer
 	rm -rf "${cfssldir}"
 fi
+
+# Copy netsy cluster config file
+cp -r "${base}/config/netsy" "${config_dir}/usernetes/netsy"
 
 ### Begin installation
 INFO "Base dir: ${base}"
@@ -241,22 +286,11 @@ LimitNOFILE=65536
 cat <<EOF | x u7s.target
 [Unit]
 Description=Usernetes target (all components in the single node)
-Requires=u7s-master-with-etcd.target u7s-node.target
-After=u7s-master-with-etcd.target u7s-node.target
+Requires=u7s-etcd.target u7s-master.target u7s-node.target
+After=u7s-etcd.target u7s-master.target u7s-node.target
 
 [Install]
 WantedBy=default.target
-EOF
-
-cat <<EOF | x u7s-master-with-etcd.target
-[Unit]
-Description=Usernetes target for Kubernetes master components (including etcd)
-Requires=u7s-etcd.target u7s-master.target
-After=u7s-etcd.target u7s-master.target
-PartOf=u7s.target
-
-[Install]
-WantedBy=u7s.target
 EOF
 
 ### RootlessKit
@@ -291,20 +325,17 @@ cat <<EOF | x u7s-etcd.target
 Description=Usernetes target for etcd
 Requires=u7s-etcd.service
 After=u7s-etcd.service
-PartOf=u7s-master-with-etcd.target
 EOF
 
 cat <<EOF | x u7s-etcd.service
 [Unit]
 Description=Usernetes etcd service
-BindsTo=u7s-rootlesskit.service
 PartOf=u7s-etcd.target
 
 [Service]
 Type=notify
 NotifyAccess=all
 ExecStart=${base}/boot/etcd.sh
-ExecStartPost=${base}/boot/etcd-init-data.sh
 ${service_common}
 EOF
 
@@ -316,10 +347,9 @@ cat <<EOF | x u7s-master.target
 Description=Usernetes target for Kubernetes master components
 Requires=u7s-kube-apiserver.service u7s-kube-controller-manager.service u7s-kube-scheduler.service
 After=u7s-kube-apiserver.service u7s-kube-controller-manager.service u7s-kube-scheduler.service
-PartOf=u7s-master-with-etcd.target
 
 [Install]
-WantedBy=u7s-master-with-etcd.target
+WantedBy=u7s.target
 EOF
 
 cat <<EOF | x u7s-kube-apiserver.service
@@ -423,9 +453,12 @@ EOF
 [Unit]
 Description=Usernetes flanneld service
 BindsTo=u7s-rootlesskit.service
+Requires=u7s-etcd.service
+After=u7s-etcd.service
 PartOf=u7s-node.target
 
 [Service]
+ExecStartPre=${base}/boot/etcd-init-data.sh
 ExecStart=${base}/boot/flanneld.sh
 ${service_common}
 EOF
@@ -464,9 +497,9 @@ if systemctl --user -q is-active u7s-master.target; then
 	kubectl -n kube-system wait --for=condition=ready pod -l k8s-app=kube-dns
 	kubectl get pods -A -o wide
 	set +x
-	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"
+	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'u7s-kubelet-api-admin'"
 	set -x
-	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin
+	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=u7s-kubelet-api-admin
 	set +x
 fi
 

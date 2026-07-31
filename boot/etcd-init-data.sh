@@ -7,5 +7,5 @@ nsenter::main $0 $@
 if [[ $U7S_FLANNEL == 1 ]]; then
 	config=$U7S_BASE_DIR/config/flannel/etcd/coreos.com_network_config
 	set -x
-	timeout 60 sh -c "until cat $config | ETCDCTL_API=3 etcdctl --endpoints https://$(hostname):2379 --cacert=$XDG_CONFIG_HOME/usernetes/master/ca.pem --cert=$XDG_CONFIG_HOME/usernetes/node/node.pem --key=$XDG_CONFIG_HOME/usernetes/node/node-key.pem put /coreos.com/network/config; do sleep 1; done"
+	timeout 60 sh -c "until cat $config | ETCDCTL_API=3 etcdctl --endpoints https://$(hostname):2379 --cacert=$XDG_CONFIG_HOME/usernetes/node/ca.pem --cert=$XDG_CONFIG_HOME/usernetes/node/node.pem --key=$XDG_CONFIG_HOME/usernetes/node/node-key.pem put /coreos.com/network/config; do sleep 1; done"
 fi

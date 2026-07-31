@@ -133,3 +133,6 @@ else
         : ${U7S_PARENT_IP=$(hostname -i | sed -e 's/ .*//g')}
 fi
 export U7S_PARENT_IP
+
+: ${ETCD_ENDPOINTS="https://${U7S_PARENT_IP}:2379"}
+export ETCD_ENDPOINTS
