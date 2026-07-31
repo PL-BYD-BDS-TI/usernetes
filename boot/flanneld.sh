@@ -9,18 +9,12 @@ if [[ $U7S_FLANNEL != 1 ]]; then
 	exit 1
 fi
 
-parent_ip=$(cat $XDG_RUNTIME_DIR/usernetes/parent_ip)
-
 exec flanneld \
-	--iface-can-reach "$parent_ip" \
+	--iface-can-reach "$U7S_PARENT_IP" \
 	--ip-masq \
-	--public-ip "$parent_ip" \
+	--public-ip "$U7S_PARENT_IP" \
 	--etcd-endpoints "$ETCD_ENDPOINTS" \
-	--etcd-cafile "$XDG_CONFIG_HOME/usernetes/master/ca.pem" \
+	--etcd-cafile "$XDG_CONFIG_HOME/usernetes/node/ca.pem" \
 	--etcd-certfile "$XDG_CONFIG_HOME/usernetes/node/node.pem" \
 	--etcd-keyfile "$XDG_CONFIG_HOME/usernetes/node/node-key.pem" \
 	$@
-
-# FIXME: nodes should not require the master key.
-# Currently nodes require the master key because flanneld and master
-# share the same etcd cluster.

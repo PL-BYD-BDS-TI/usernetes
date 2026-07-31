@@ -45,7 +45,6 @@ if [[ $_U7S_CHILD == 0 ]]; then
 		$0 $@
 else
 	# save IP address
-	echo $U7S_PARENT_IP >$XDG_RUNTIME_DIR/usernetes/parent_ip
 	hostname -I >$XDG_RUNTIME_DIR/usernetes/child_ip
 
 	# Remove symlinks so that the child won't be confused by the parent configuration

@@ -1,0 +1,45 @@
+{
+  // Cluster identity — must match the Organization (O) field in TLS certificates
+  "cluster_id": "u7s-nodes",
+
+  // Object storage configuration
+  "storage": {
+    "provider": "s3",       // "s3" or "gcs"
+    "bucket_name": "my-netsy-bucket",
+    "key_prefix": "",       // optional prefix for all object storage keys
+    "class": "STANDARD",    // S3: STANDARD/STANDARD_IA/... ; GCS: STANDARD/NEARLINE/COLDLINE/ARCHIVE
+    "encryption": "customer-managed", // or "customer-managed"
+    "kms_key_id": "my-key-id"     // only needed when using customer-managed encryption
+  },
+
+  // How often each Node sends heartbeats to the Elector and Primary
+  "heartbeat_interval": "2s",
+
+  // Elector leader election and node lifecycle
+  "elector": {
+    "degradation_count": 2,           // number of missed heartbeats before Node is marked Degraded
+    "deregistration_timeout": "10m",  // auto-deregister Degraded nodes after this duration ("0" to disable)
+    "primary_prior_timeout": "5s"     // how long to wait for the previous Primary during election before proceeding
+  },
+
+  // Replication stream between Primary and Replicas
+  "replication": {
+    "quorum": -1,                     // -1 = majority, 0 = disabled (sync to object storage), positive int = static
+    "degradation_count": 2,           // number of missed Heartbeats/Receipts before Replica is excluded from quorum
+    // Buffer for async object storage writes
+    "chunk_buffer": {
+      "threshold_size_mb": 4,         // flush chunk buffer to object storage when it exceeds this size
+      "threshold_age_minutes": 1      // flush chunk buffer to object storage after this duration
+    }
+  },
+
+  // Snapshot creation thresholds
+  "snapshot": {
+    "threshold_records": 1000,        // create snapshot after N records since last snapshot
+    "threshold_size_mb": 100,         // create snapshot when chunks exceed N MB
+    "threshold_age_minutes": 60       // create snapshot after N minutes since last snapshot (0 = disabled)
+  },
+
+  // How often the Primary schedules compaction across all Nodes
+  "compaction_interval": "10m"
+}
