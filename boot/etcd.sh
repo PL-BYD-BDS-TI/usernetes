@@ -5,12 +5,12 @@ source $U7S_BASE_DIR/common/common.inc.sh
 exec etcd \
 	--data-dir $XDG_DATA_HOME/usernetes/etcd \
 	--name $(hostname -s) \
-	--cert-file=$XDG_CONFIG_HOME/usernetes/node/node.pem \
-	--key-file=$XDG_CONFIG_HOME/usernetes/node/node-key.pem \
-	--peer-cert-file=$XDG_CONFIG_HOME/usernetes/node/node.pem \
-	--peer-key-file=$XDG_CONFIG_HOME/usernetes/node/node-key.pem \
+	--cert-file=$XDG_CONFIG_HOME/usernetes/peer/peer.pem \
+	--key-file=$XDG_CONFIG_HOME/usernetes/peer/peer-key.pem \
+	--peer-cert-file=$XDG_CONFIG_HOME/usernetes/peer/peer.pem \
+	--peer-key-file=$XDG_CONFIG_HOME/usernetes/peer/peer-key.pem \
 	--trusted-ca-file=$XDG_CONFIG_HOME/usernetes/node/ca.pem \
-	--peer-trusted-ca-file=$XDG_CONFIG_HOME/usernetes/node/ca.pem \
+	--peer-trusted-ca-file=$XDG_CONFIG_HOME/usernetes/peer/ca.pem \
 	--peer-client-cert-auth \
 	--client-cert-auth \
 	--listen-client-urls https://0.0.0.0:2379 \

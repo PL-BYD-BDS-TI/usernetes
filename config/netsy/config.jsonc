@@ -1,6 +1,6 @@
 {
   // Cluster identity — must match the Organization (O) field in TLS certificates
-  "cluster_id": "u7s-nodes",
+  "cluster_id": "u7s-db",
 
   // Object storage configuration
   "storage": {

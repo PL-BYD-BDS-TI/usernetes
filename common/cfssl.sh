@@ -124,15 +124,15 @@ create_kubeconfig ${master_d}/admin-${master}.kubeconfig admin https://${master}
 
 # The Controller Manager Client Certificate
 cfssl_gencert_master "kube-controller-manager"
-create_kubeconfig ${master_d}/kube-controller-manager.kubeconfig u7s-kube-controller-manager https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-controller-manager.pem ${master_d}/kube-controller-manager-key.pem
+create_kubeconfig ${master_d}/kube-controller-manager.kubeconfig system:kube-controller-manager https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-controller-manager.pem ${master_d}/kube-controller-manager-key.pem
 
 # The Kube Proxy Client Certificate
 cfssl_gencert_master "kube-proxy"
-create_kubeconfig ${master_d}/kube-proxy.kubeconfig u7s-kube-proxy https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-proxy.pem ${master_d}/kube-proxy-key.pem
+create_kubeconfig ${master_d}/kube-proxy.kubeconfig system:kube-proxy https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-proxy.pem ${master_d}/kube-proxy-key.pem
 
 # The Scheduler Client Certificate
 cfssl_gencert_master "kube-scheduler"
-create_kubeconfig ${master_d}/kube-scheduler.kubeconfig u7s-kube-scheduler https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-scheduler.pem ${master_d}/kube-scheduler-key.pem
+create_kubeconfig ${master_d}/kube-scheduler.kubeconfig system:kube-scheduler https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-scheduler.pem ${master_d}/kube-scheduler-key.pem
 
 # The Kubernetes API Server Certificate
 if [[ -f "${master_d}/kubernetes.pem" ]]; then
@@ -162,6 +162,7 @@ cfssl_gencert_master "service-account"
 for n in "${nodes[@]}"; do
 	nodename=$(echo $n | sed -e 's/,.*//g')
 	node_d="${dir}/nodes.${nodename}"
+	peer_d="${dir}/peers.${nodename}"
 	mkdir -p "${node_d}"
 	if [[ -f "${node_d}/master" ]]; then
 		log::info "Already exists: ${node_d}/master"
@@ -182,7 +183,7 @@ for n in "${nodes[@]}"; do
 		log::info "Creating ${node_d}/{node.pem,node-key.pem}"
 		cat >${node_d}/node-csr.json <<EOF
 {
-  "CN": "${nodename}",
+  "CN": "system:node:${nodename}",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -191,7 +192,7 @@ for n in "${nodes[@]}"; do
     {
       "C": "PL",
       "L": "Bydgoszcz",
-      "O": "u7s-nodes",
+      "O": "system:nodes",
       "OU": "Kubernetes The Hard Way"
     }
   ]
@@ -201,7 +202,7 @@ EOF
 			-ca="${master_d}/ca.pem" \
 			-ca-key="${master_d}/ca-key.pem" \
 			-config="$cc/ca-config.json" \
-			-hostname=$n \
+			-hostname=${n},netsy://u7s-db/client/${nodename} \
 			-profile=kubernetes \
 			"${node_d}/node-csr.json" | cfssljson -bare "${node_d}/node"
 	fi
@@ -210,7 +211,46 @@ EOF
 	cp -f ${master_d}/kube-proxy.kubeconfig ${node_d}/kube-proxy.kubeconfig
 	# The kubelet Kubernetes Configuration File
 	create_kubeconfig ${node_d}/node.kubeconfig ${nodename} https://${master}:6443 ${node_d}/ca.pem ${node_d}/node.pem ${node_d}/node-key.pem
+
+	# Certificates for etcd/netsy peers
+	mkdir -p "${peer_d}"
+	if [[ -f "${peer_d}/ca.pem" ]]; then
+		log::info "Already exists: ${peer_d}/ca.pem"
+	else
+		log::info "Copying ${master_d}/ca.pem to ${peer_d}/ca.pem"
+		cp -f ${master_d}/ca.pem ${peer_d}/ca.pem
+	fi
+	if [[ -f "${peer_d}/node.pem" ]]; then
+		log::info "Already exists: ${peer_d}/node.pem"
+	else
+		log::info "Creating ${peer_d}/{peer.pem,peer-key.pem}"
+		cat >${peer_d}/peer-csr.json <<EOF
+{
+  "CN": "${nodename}",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "PL",
+      "L": "Bydgoszcz",
+      "O": "u7s-db",
+      "OU": "Kubernetes The Hard Way"
+    }
+  ]
+}
+EOF
+		cfssl gencert -loglevel="$loglevel" \
+			-ca="${master_d}/ca.pem" \
+			-ca-key="${master_d}/ca-key.pem" \
+			-config="$cc/ca-config.json" \
+			-hostname="${n},netsy://u7s-db/peer/${nodename}" \
+			-profile=kubernetes \
+			"${peer_d}/peer-csr.json" | cfssljson -bare "${peer_d}/peer"
+	fi
 	# DONE
+	touch ${peer_d}/done
 	touch ${node_d}/done
 done
 
