@@ -8,7 +8,7 @@ ARG ROOTLESSKIT_COMMIT=v3.1.0
 ARG CONTAINERD_COMMIT=v2.3.4
 ARG CRIO_COMMIT=v1.36.3
 
-ARG KUBE_NODE_COMMIT=v1.36.3
+ARG KUBE_NODE_COMMIT=v1.36.4
 
 # Version definitions (cont.)
 ARG SLIRP4NETNS_RELEASE=v1.3.4
@@ -16,19 +16,20 @@ ARG CONMON_RELEASE=v2.2.1
 ARG CRUN_RELEASE=1.29.1
 ARG FUSE_OVERLAYFS_RELEASE=v1.17
 ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.7
-ARG KUBE_MASTER_RELEASE=v1.36.3
+ARG KUBE_MASTER_RELEASE=v1.36.4
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.36.3
+ARG KUBE_GIT_VERSION=v1.36.4
 ARG CNI_PLUGINS_RELEASE=v1.9.1
 # ARG CILIUM_RELEASE=v1.20.0
 # ARG CALICO_RELEASE=v3.32.0
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel3
 ARG FLANNEL_RELEASE=v0.28.9
 ARG ETCD_RELEASE=v3.7.1
+ARG NETSY_RELEASE=1.1.1
 ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.24
-ARG GO_RELEASE=1.26.6
+ARG GO_RELEASE=1.26.7
 ARG UBUNTU_RELEASE=resolute
 
 ### Common base images (common-*)
@@ -166,6 +167,13 @@ RUN mkdir /tmp-etcd /out && \
   wget -q -O - https://github.com/etcd-io/etcd/releases/download/${ETCD_RELEASE}/etcd-${ETCD_RELEASE}-linux-amd64.tar.gz | tar xz -C /tmp-etcd && \
   cp /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcd /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdctl /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdutl /out
 
+#### netsy (netsy-build)
+FROM common-alpine AS netsy-build
+ARG NETSY_RELEASE
+RUN mkdir /tmp-netsy /out && \
+  wget -q -O - https://github.com/netsy-dev/netsy/releases/download/v${NETSY_RELEASE}/netsy_${NETSY_RELEASE}_linux_amd64.tar.gz | tar xz -C /tmp-netsy && \
+  cp /tmp-netsy/netsy /out
+
 #### cfssl (cfssl-build)
 FROM common-alpine AS cfssl-build
 ARG CFSSL_RELEASE
@@ -196,6 +204,7 @@ COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
 COPY --from=etcd-build /out/* /
+COPY --from=netsy-build /out/* /
 COPY --from=cfssl-build /out/* /
 # COPY --from=calico /bin/calico-node /calico-node
 
