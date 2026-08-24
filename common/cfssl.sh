@@ -119,12 +119,11 @@ create_kubeconfig() {
 
 # The Admin Client Certificate
 cfssl_gencert_master "admin"
-create_kubeconfig ${master_d}/admin-localhost.kubeconfig admin https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/admin.pem ${master_d}/admin-key.pem
-create_kubeconfig ${master_d}/admin-${master}.kubeconfig admin https://${master}:6443 ${master_d}/ca.pem ${master_d}/admin.pem ${master_d}/admin-key.pem
+create_kubeconfig ${master_d}/admin.kubeconfig admin https://${master}:6443 ${master_d}/ca.pem ${master_d}/admin.pem ${master_d}/admin-key.pem
 
 # The Controller Manager Client Certificate
 cfssl_gencert_master "kube-controller-manager"
-create_kubeconfig ${master_d}/kube-controller-manager.kubeconfig system:kube-controller-manager https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-controller-manager.pem ${master_d}/kube-controller-manager-key.pem
+create_kubeconfig ${master_d}/kube-controller-manager.kubeconfig system:kube-controller-manager https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-controller-manager.pem ${master_d}/kube-controller-manager-key.pem
 
 # The Kube Proxy Client Certificate
 cfssl_gencert_master "kube-proxy"
@@ -132,7 +131,11 @@ create_kubeconfig ${master_d}/kube-proxy.kubeconfig system:kube-proxy https://${
 
 # The Scheduler Client Certificate
 cfssl_gencert_master "kube-scheduler"
-create_kubeconfig ${master_d}/kube-scheduler.kubeconfig system:kube-scheduler https://127.0.0.1:6443 ${master_d}/ca.pem ${master_d}/kube-scheduler.pem ${master_d}/kube-scheduler-key.pem
+create_kubeconfig ${master_d}/kube-scheduler.kubeconfig system:kube-scheduler https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-scheduler.pem ${master_d}/kube-scheduler-key.pem
+
+# The Subnet Manager Client Certificate
+cfssl_gencert_master "kube-subnet-mgr"
+create_kubeconfig ${master_d}/kube-subnet-mgr.kubeconfig system:kube-subnet-mgr https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-subnet-mgr.pem ${master_d}/kube-subnet-mgr-key.pem
 
 # The Kubernetes API Server Certificate
 if [[ -f "${master_d}/kubernetes.pem" ]]; then
@@ -209,6 +212,9 @@ EOF
 	# The kube-proxy Kubernetes Configuration File
 	log::info "Copying ${master_d}/kube-proxy.kubeconfig to ${node_d}/kube-proxy.kubeconfig"
 	cp -f ${master_d}/kube-proxy.kubeconfig ${node_d}/kube-proxy.kubeconfig
+	# The kube-subnet-mgr Kubernetes Configuration File
+	log::info "Copying ${master_d}/kube-subnet-mgr.kubeconfig to ${node_d}/kube-subnet-mgr.kubeconfig"
+	cp -f ${master_d}/kube-subnet-mgr.kubeconfig ${node_d}/kube-subnet-mgr.kubeconfig
 	# The kubelet Kubernetes Configuration File
 	create_kubeconfig ${node_d}/node.kubeconfig ${nodename} https://${master}:6443 ${node_d}/ca.pem ${node_d}/node.pem ${node_d}/node-key.pem
 

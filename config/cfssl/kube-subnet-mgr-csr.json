@@ -1,0 +1,15 @@
+{
+  "CN": "system:kube-subnet-mgr",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "PL",
+      "L": "Bydgoszcz",
+      "O": "system:kube-subnet-mgr",
+      "OU": "Kubernetes The Hard Way"
+    }
+  ]
+}

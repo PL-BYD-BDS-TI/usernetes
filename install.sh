@@ -37,7 +37,6 @@ set -u
 
 ### Parse args
 arg0=$0
-start="u7s.target"
 cri="crio"
 cni="flannel"
 db="etcd"
@@ -50,7 +49,6 @@ function usage() {
 	echo "Usage: ${arg0} [OPTION]..."
 	echo "Install Usernetes systemd units to ${config_dir}/systemd/unit ."
 	echo
-	echo "  --start=UNIT        Enable and start the specified target after the installation, e.g. \"u7s.target\". Set to an empty to disable autostart. (Default: \"$start\")"
 	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
 	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
 	echo "  --db=DBTYPE         Specify KV database type, \"etcd\" or \"netsy\". (Default: \"$db\")"
@@ -71,8 +69,8 @@ function usage() {
 }
 
 set +e
-#args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,cidr:,,delay:,wait-init-certs -n $arg0 -- "$@")
-args=$(getopt -o hp: --long help,publish:,start:,cri:,cni:,db:,,delay:,wait-init-certs -n $arg0 -- "$@")
+#args=$(getopt -o hp: --long help,publish:,cri:,cni:,cidr:,,delay:,wait-init-certs -n $arg0 -- "$@")
+args=$(getopt -o hp: --long help,publish:,cri:,cni:,db:,,delay:,wait-init-certs -n $arg0 -- "$@")
 getopt_status=$?
 set -e
 if [ $getopt_status != 0 ]; then
@@ -89,10 +87,6 @@ while true; do
 		;;
 	-p | --publish)
 		publish="$publish $2"
-		shift 2
-		;;
-	--start)
-		start="$2"
 		shift 2
 		;;
 	--cri)
@@ -180,7 +174,7 @@ else
 fi
 
 # check kernel modules
-for f in $(cat ${base}/config/modules-load.d/usernetes.conf); do
+for f in $(cat ${base}/config/modules-load.d/u7s.conf); do
 	if grep -qw "^$f" /proc/modules; then
 		INFO "Kernel module $f is loaded"
 	elif grep -qw "${f}.ko$" /lib/modules/$(uname -r)/modules.builtin; then
@@ -278,7 +272,7 @@ function x() {
 
 service_common="WorkingDirectory=${base}
 EnvironmentFile=${config_dir}/usernetes/env
-Restart=on-failure
+Restart=always
 LimitNOFILE=65536
 "
 
@@ -286,8 +280,8 @@ LimitNOFILE=65536
 cat <<EOF | x u7s.target
 [Unit]
 Description=Usernetes target (all components in the single node)
-Requires=u7s-etcd.target u7s-master.target u7s-node.target
-After=u7s-etcd.target u7s-master.target u7s-node.target
+Requires=u7s-${db}.target u7s-master.target u7s-node.target
+After=u7s-${db}.target u7s-master.target u7s-node.target
 
 [Install]
 WantedBy=default.target
@@ -318,15 +312,15 @@ ${service_common}
 EOF
 fi
 
-### etcd
-# TODO: support running without RootlessKit
-cat <<EOF | x u7s-etcd.target
+### etcd or netsy
+cat <<EOF | x u7s-${db}.target
 [Unit]
-Description=Usernetes target for etcd
-Requires=u7s-etcd.service
-After=u7s-etcd.service
+Description=Usernetes target for $db
+Requires=u7s-${db}.service
+After=u7s-${db}.service
 EOF
 
+if [[ "$db" == 'etcd' ]]; then
 cat <<EOF | x u7s-etcd.service
 [Unit]
 Description=Usernetes etcd service
@@ -338,10 +332,20 @@ NotifyAccess=all
 ExecStart=${base}/boot/etcd.sh
 ${service_common}
 EOF
+elif [[ "$db" == 'netsy' ]]; then
+cat <<EOF | x u7s-netsy.service
+[Unit]
+Description=Usernetes netsy service
+PartOf=u7s-netsy.target
+
+[Service]
+Type=exec
+ExecStart=${base}/boot/netsy.sh
+${service_common}
+EOF
+fi
 
 ### master
-# TODO: support running without RootlessKit
-# TODO: decouple from etcd (for supporting etcd on another node)
 cat <<EOF | x u7s-master.target
 [Unit]
 Description=Usernetes target for Kubernetes master components
@@ -356,8 +360,8 @@ cat <<EOF | x u7s-kube-apiserver.service
 [Unit]
 Description=Usernetes kube-apiserver service
 BindsTo=u7s-rootlesskit.service
-Requires=u7s-etcd.service
-After=u7s-etcd.service
+Requires=u7s-${db}.service
+After=u7s-${db}.service
 PartOf=u7s-master.target
 
 [Service]
@@ -453,12 +457,11 @@ EOF
 [Unit]
 Description=Usernetes flanneld service
 BindsTo=u7s-rootlesskit.service
-Requires=u7s-etcd.service
-After=u7s-etcd.service
+Requires=u7s-kube-apiserver.service
+After=u7s-kube-apiserver.service
 PartOf=u7s-node.target
 
 [Service]
-ExecStartPre=${base}/boot/etcd-init-data.sh
 ExecStart=${base}/boot/flanneld.sh
 ${service_common}
 EOF
@@ -466,25 +469,24 @@ EOF
 fi
 
 ### Finish installation
-systemctl --user daemon-reload
-if [ -z $start ]; then
-	INFO 'Run `systemctl --user -T start u7s.target` to start Usernetes.'
-	exit 0
-fi
-INFO "Starting $start"
+INFO "Starting u7s.target"
 set -x
-systemctl --user -T enable $start
-time systemctl --user -T start $start
-systemctl --user --all --no-pager list-units 'u7s-*'
+systemctl --user -T enable u7s.target
+time systemctl --user start -T u7s-db.target u7s-rootlesskit.service u7s-kube-apiserver.service
 set +x
 
-KUBECONFIG=
-if systemctl --user -q is-active u7s-master.target; then
-	PATH="${base}/bin:$PATH"
-	KUBECONFIG="${config_dir}/usernetes/master/admin-localhost.kubeconfig"
-	export PATH KUBECONFIG
+PATH="${base}/bin:$PATH"
+KUBECONFIG="${config_dir}/usernetes/master/admin.kubeconfig"
+export PATH KUBECONFIG
+
+kubectl apply -f ${base}/manifests/kube-subnet-mgr.yaml
+
+time systemctl --user start -T u7s.target
+
+if systemctl --user -q is-active u7s.target; then
 	INFO "Installing CoreDNS"
 	set -x
+	systemctl --user --all --no-pager list-units 'u7s-*'
 	# sleep for waiting the node to be available
 	sleep 3
 	kubectl get nodes -o wide

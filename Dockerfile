@@ -29,7 +29,7 @@ ARG NETSY_RELEASE=1.1.1
 ARG CFSSL_RELEASE=1.6.5
 
 ARG ALPINE_RELEASE=3.24
-ARG GO_RELEASE=1.26.7
+ARG GO_RELEASE=1.27.0
 ARG UBUNTU_RELEASE=resolute
 
 ### Common base images (common-*)
@@ -150,9 +150,8 @@ RUN KUBE_STATIC_OVERRIDES=kubelet \
   mkdir /out && cp _output/bin/kube* /out
 
 #### flannel (flannel-build)
-# TODO: use upstream binary when https://github.com/coreos/flannel/issues/1365 gets resolved
 FROM common-golang-alpine-heavy AS flannel-build
-RUN git clone -q https://github.com/coreos/flannel.git /go/src/github.com/coreos/flannel
+RUN git clone -q https://github.com/flannel-io/flannel.git /go/src/github.com/coreos/flannel
 WORKDIR /go/src/github.com/coreos/flannel
 ARG FLANNEL_RELEASE
 RUN git pull && git checkout ${FLANNEL_RELEASE}

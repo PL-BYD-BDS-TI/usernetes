@@ -9,12 +9,15 @@ if [[ $U7S_FLANNEL != 1 ]]; then
 	exit 1
 fi
 
+export NODE_NAME="$(hostname -s)"
+
 exec flanneld \
 	--iface-can-reach "$U7S_PARENT_IP" \
 	--ip-masq \
 	--public-ip "$U7S_PARENT_IP" \
-	--etcd-endpoints "$ETCD_ENDPOINTS" \
-	--etcd-cafile "$XDG_CONFIG_HOME/usernetes/node/ca.pem" \
-	--etcd-certfile "$XDG_CONFIG_HOME/usernetes/node/node.pem" \
-	--etcd-keyfile "$XDG_CONFIG_HOME/usernetes/node/node-key.pem" \
+	--kube-subnet-mgr \
+	--kube-api-url "https://$(cat $XDG_CONFIG_HOME/usernetes/node/master):6443" \
+	--kube-annotation-prefix "flannel.io" \
+	--kubeconfig-file "$XDG_CONFIG_HOME/usernetes/node/kube-subnet-mgr.kubeconfig" \
+	--net-config-path="$U7S_BASE_DIR/config/flannel/etcd/coreos.com_network_config" \
 	$@
