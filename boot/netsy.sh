@@ -2,6 +2,7 @@
 export U7S_BASE_DIR=$(realpath $(dirname $0)/..)
 source $U7S_BASE_DIR/common/common.inc.sh
 source $U7S_BASE_DIR/config/netsy/netsy.inc.sh
+mkdir -p "$NETSY_DATA_DIR"
 
 # Running netsy as child process
 (

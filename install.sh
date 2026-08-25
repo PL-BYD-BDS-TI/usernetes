@@ -320,7 +320,7 @@ Description=Usernetes ${db} service
 [Service]
 Type=notify
 NotifyAccess=all
-TimeoutStartSec=120
+TimeoutStartSec=300
 ExecStart=${base}/boot/${db}.sh
 ${service_common}
 EOF
@@ -464,36 +464,25 @@ PATH="${base}/bin:$PATH"
 KUBECONFIG="${config_dir}/usernetes/master/admin.kubeconfig"
 export PATH KUBECONFIG
 
+INFO "Setting up ClusterRole and ClusterRoleBinding for 'system:kube-subnet-mgr' (flannel)"
 set -x
 kubectl apply -f ${base}/manifests/kube-subnet-mgr.yaml
 set +x
 
-INFO "Starting u7s-node.target"
+INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"
 set -x
-time systemctl --user start -T u7s-node.target
+kubectl apply -f ${base}/manifests/apiserver-kubelet-admin.yaml
 set +x
 
-if systemctl --user -q is-active u7s.target; then
-	INFO "Installing CoreDNS"
-	set -x
-	systemctl --user --all --no-pager list-units 'u7s-*'
-	# sleep for waiting the node to be available
-	sleep 5
-	kubectl get nodes -o wide
-	kubectl apply -f ${base}/manifests/coredns.yaml
-	set +x
-	INFO "Waiting for CoreDNS pods to be available"
-	set -x
-	# sleep for waiting the pod object to be created
-	sleep 5
-	kubectl -n kube-system wait --for=condition=ready pod -l k8s-app=kube-dns
-	kubectl get pods -A -o wide
-	set +x
-	INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"
-	set -x
-	kubectl create clusterrolebinding apiserver-kubelet-admin --user=kubernetes --clusterrole=system:kubelet-api-admin
-	set +x
-fi
+INFO "Installing CoreDNS"
+set -x
+kubectl apply -f ${base}/manifests/coredns.yaml
+set +x
+
+INFO "Starting u7s.target"
+set -x
+time systemctl --user start -T u7s.target
+set +x
 
 INFO "Installation complete."
 INFO 'Hint: `sudo loginctl enable-linger` to start user services automatically on the system start up.'
