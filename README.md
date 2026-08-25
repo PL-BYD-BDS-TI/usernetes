@@ -36,13 +36,12 @@ Usernetes aims to provide a reference distribution of Kubernetes that can be ins
 * Rootless Containers infrastructure ([RootlessKit](https://github.com/rootless-containers/rootlesskit), [slirp4netns](https://github.com/rootless-containers/slirp4netns), and [fuse-overlayfs](https://github.com/containers/fuse-overlayfs))
 * Master components (`etcd`, `kube-apiserver`, ...)
 * Node components (`kubelet` and `kube-proxy`)
-* CRI runtimes
-  * containerd (default)
+* CRI runtime
   * CRI-O
 * OCI runtime
   * crun
 * Multi-node CNI
-  * Flannel (VXLAN)
+  * Flannel (lxc-user-nic and Wireguard)
 * CoreDNS
 
 Installer scripts are in POC status.

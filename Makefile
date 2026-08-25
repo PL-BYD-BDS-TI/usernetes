@@ -21,7 +21,6 @@ endif
 test: image _test
 
 _test:
-	./hack/smoketest-docker.sh u7s-test-containerd $(IMAGE) --cri=containerd
 	./hack/smoketest-docker.sh u7s-test-crio $(IMAGE) --cri=crio
 
 up: image _up

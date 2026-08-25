@@ -49,8 +49,8 @@ function usage() {
 	echo "Usage: ${arg0} [OPTION]..."
 	echo "Install Usernetes systemd units to ${config_dir}/systemd/unit ."
 	echo
-	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
-	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
+#	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
+#	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
 	echo "  --db=DBTYPE         Specify KV database type, \"etcd\" or \"netsy\". (Default: \"$db\")"
 	echo "  -p, --publish=PORT  Publish ports in RootlessKit's network namespace, e.g. \"0.0.0.0:10250:10250/tcp\". Can be specified multiple times. (Default: \"${publish_default}\")"
 #	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
@@ -59,8 +59,8 @@ function usage() {
 	echo "  # The default options"
 	echo "  ${arg0}"
 	echo
-	echo "  # Use containerd as the CRI runtime"
-	echo "  ${arg0} --cri=containerd"
+	echo "  # Use netsy as the underlying database type"
+	echo "  ${arg0} --db=netsy"
 	echo
 	echo 'Use `uninstall.sh` for uninstallation.'
 	echo 'For an example of multi-node cluster with flannel, see docker-compose.yaml'
@@ -89,30 +89,30 @@ while true; do
 		publish="$publish $2"
 		shift 2
 		;;
-	--cri)
-		cri="$2"
-		case "$cri" in
-		containerd | crio) ;;
+	# --cri)
+	# 	cri="$2"
+	# 	case "$cri" in
+	# 	containerd | crio) ;;
 
-		*)
-			ERROR "Unknown CRI runtime \"$cri\". Supported values: \"containerd\" (default) \"crio\" \"\"."
-			exit 1
-			;;
-		esac
-		shift 2
-		;;
-	--cni)
-		cni="$2"
-		case "$cni" in
-		"" | "flannel") ;;
+	# 	*)
+	# 		ERROR "Unknown CRI runtime \"$cri\". Supported values: \"containerd\" (default) \"crio\" \"\"."
+	# 		exit 1
+	# 		;;
+	# 	esac
+	# 	shift 2
+	# 	;;
+	# --cni)
+	# 	cni="$2"
+	# 	case "$cni" in
+	# 	"" | "flannel") ;;
 
-		*)
-			ERROR "Unknown CNI \"$cni\". Supported values: \"\" (default) \"flannel\" ."
-			exit 1
-			;;
-		esac
-		shift 2
-		;;
+	# 	*)
+	# 		ERROR "Unknown CNI \"$cni\". Supported values: \"\" (default) \"flannel\" ."
+	# 		exit 1
+	# 		;;
+	# 	esac
+	# 	shift 2
+	# 	;;
 	--db)
 		db="$2"
 		case "$db" in

@@ -13,6 +13,5 @@ x() {
 }
 
 x ROOTLESSKIT rootless-containers/rootlesskit master
-x CONTAINERD containerd/containerd main
 x CRIO cri-o/cri-o main
 # x KUBE_NODE kubernetes/kubernetes master

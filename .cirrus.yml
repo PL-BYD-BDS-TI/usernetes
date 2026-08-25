@@ -40,7 +40,5 @@ vagrant_task:
   vagrant_ssh_config_script:
     - mkdir -p -m 0700 /root/.ssh
     - vagrant ssh-config >> /root/.ssh/config
-  containerd_test_script:
-    - ssh default /vagrant/hack/smoketest-binaries.sh --cri=containerd
   crio_test_script:
     - ssh default /vagrant/hack/smoketest-binaries.sh --cri=crio

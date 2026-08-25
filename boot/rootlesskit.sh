@@ -19,10 +19,7 @@ if [[ $_U7S_CHILD == 0 ]]; then
 
 	# Re-exec the script via RootlessKit, so as to create unprivileged {user,mount,network} namespaces.
 	#
-	# --net specifies the network stack. slirp4netns and VPNKit are supported.
-	# Currently, slirp4netns is the fastest.
-	# See https://github.com/rootless-containers/rootlesskit for the benchmark result.
-	#
+	# --net specifies the network stack; lxc-user-nic requires LXC to be installed on the host system
 	# --copy-up allows removing/creating files in the directories by creating tmpfs and symlinks
 	# * /etc: copy-up is required so as to prevent `/etc/resolv.conf` in the
 	#         namespace from being unexpectedly unmounted when `/etc/resolv.conf` is recreated on the host
@@ -51,9 +48,9 @@ else
 	rm -f \
 		/run/xtables.lock /run/flannel /run/netns \
 		/run/runc /run/crun \
-		/run/containerd /run/containers /run/crio \
+		/run/containers /run/crio \
 		/etc/cni \
-		/etc/containerd /etc/containers /etc/crio \
+		/etc/containers /etc/crio \
 		/etc/kubernetes
 
 	# Copy CNI config to /etc/cni/net.d (Likely to be hardcoded in CNI installers)

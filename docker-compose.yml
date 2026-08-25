@@ -9,15 +9,15 @@ services:
       - /home/user/usernetes/common/cfssl.sh
       - --dir=/home/user/.config/usernetes
       - --master=master
-      - --node=node-crio
-      - --node=node-containerd
+      - --node=node-1
+      - --node=node-2
     privileged: true
     tty: true
     hostname: master
     volumes:
       - tls-master:/home/user/.config/usernetes/master
-      - tls-node-crio:/home/user/.config/usernetes/nodes.node-crio
-      - tls-node-containerd:/home/user/.config/usernetes/nodes.node-containerd
+      - tls-node-1:/home/user/.config/usernetes/nodes.node-1
+      - tls-node-2:/home/user/.config/usernetes/nodes.node-2
   master:
     image: ghcr.io/rootless-containers/usernetes
     command:
@@ -38,7 +38,7 @@ services:
       - usernetes
     volumes:
       - tls-master:/home/user/.config/usernetes/master
-  node-crio:
+  node-1:
     image: ghcr.io/rootless-containers/usernetes
     command:
       - --wait-init-certs
@@ -53,13 +53,13 @@ services:
     tty: true
     networks:
       - usernetes
-    hostname: node-crio
+    hostname: node-1
     volumes:
-      - tls-node-crio:/home/user/.config/usernetes/node
+      - tls-node-1:/home/user/.config/usernetes/node
 # FIXME: flanneld should not require tls-master
 # (currently required because master and flanneld share the same etcd cluster)
       - tls-master:/home/user/.config/usernetes/master
-  node-containerd:
+  node-2:
     image: ghcr.io/rootless-containers/usernetes
     command:
       - --wait-init-certs
@@ -68,14 +68,14 @@ services:
       - --publish=0.0.0.0:10250:10250/tcp
       - --publish=0.0.0.0:8472:8472/udp
       - --cni=flannel
-      - --cri=containerd
+      - --cri=crio
     privileged: true
     tty: true
     networks:
       - usernetes
-    hostname: node-containerd
+    hostname: node-2
     volumes:
-      - tls-node-containerd:/home/user/.config/usernetes/node
+      - tls-node-2:/home/user/.config/usernetes/node
       - tls-master:/home/user/.config/usernetes/master
 networks:
   usernetes:
@@ -85,12 +85,12 @@ volumes:
       type: tmpfs
       device: tmpfs
       o: "uid=1000"
-  tls-node-crio:
+  tls-node-1:
     driver_opts:
       type: tmpfs
       device: tmpfs
       o: "uid=1000"
-  tls-node-containerd:
+  tls-node-2:
     driver_opts:
       type: tmpfs
       device: tmpfs

@@ -5,17 +5,14 @@
 # use ./hack/show-latest-commits.sh to get the latest commits
 
 ARG ROOTLESSKIT_COMMIT=v3.1.0
-ARG CONTAINERD_COMMIT=v2.3.4
 ARG CRIO_COMMIT=v1.36.4
 
 ARG KUBE_NODE_COMMIT=v1.36.4
 
 # Version definitions (cont.)
-ARG SLIRP4NETNS_RELEASE=v1.3.4
 ARG CONMON_RELEASE=v2.2.1
 ARG CRUN_RELEASE=1.29.1
 ARG FUSE_OVERLAYFS_RELEASE=v1.17
-ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE=2.1.7
 ARG KUBE_MASTER_RELEASE=v1.36.4
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
 ARG KUBE_GIT_VERSION=v1.36.4
@@ -51,39 +48,17 @@ RUN mkdir /out && \
   go build -o /out/rootlesskit /go/src/github.com/rootless-containers/rootlesskit/cmd/rootlesskit && \
   go build -o /out/rootlessctl /go/src/github.com/rootless-containers/rootlesskit/cmd/rootlessctl
 
-#### slirp4netns (slirp4netns-build)
-FROM common-alpine AS slirp4netns-build
-ARG SLIRP4NETNS_RELEASE
-ADD https://github.com/rootless-containers/slirp4netns/releases/download/${SLIRP4NETNS_RELEASE}/slirp4netns-x86_64 /out/slirp4netns
-RUN chmod +x /out/slirp4netns
-
 ### fuse-overlayfs (fuse-overlayfs-build)
 FROM common-alpine AS fuse-overlayfs-build
 ARG FUSE_OVERLAYFS_RELEASE
 ADD https://github.com/containers/fuse-overlayfs/releases/download/${FUSE_OVERLAYFS_RELEASE}/fuse-overlayfs-x86_64 /out/fuse-overlayfs
 RUN chmod +x /out/fuse-overlayfs
 
-### containerd-fuse-overlayfs (containerd-fuse-overlayfs-build)
-FROM common-alpine AS containerd-fuse-overlayfs-build
-ARG CONTAINERD_FUSE_OVERLAYFS_RELEASE
-RUN mkdir -p /out && \
- wget -q -O - https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/v${CONTAINERD_FUSE_OVERLAYFS_RELEASE}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_RELEASE}-linux-amd64.tar.gz | tar xz -C /out
-
 ### crun (crun-build)
 FROM common-alpine AS crun-build
 ARG CRUN_RELEASE
 ADD https://github.com/containers/crun/releases/download/${CRUN_RELEASE}/crun-${CRUN_RELEASE}-linux-amd64 /out/crun
 RUN chmod +x /out/crun
-
-### containerd (containerd-build)
-FROM common-golang-alpine-heavy AS containerd-build
-RUN git clone https://github.com/containerd/containerd.git /go/src/github.com/containerd/containerd
-WORKDIR /go/src/github.com/containerd/containerd
-ARG CONTAINERD_COMMIT
-RUN git pull && git checkout ${CONTAINERD_COMMIT}
-RUN SHIM_CGO_ENABLED=1 make --quiet EXTRA_FLAGS="-buildmode pie" EXTRA_LDFLAGS='-linkmode external -extldflags "-fno-PIC -static"' BUILDTAGS="netgo osusergo static_build no_devmapper no_btrfs no_aufs no_zfs" \
-  bin/containerd bin/containerd-shim-runc-v2 bin/ctr && \
-  mkdir /out && cp bin/containerd bin/containerd-shim-runc-v2 bin/ctr /out
 
 ### CRI-O (crio-build)
 FROM common-golang-alpine-heavy AS crio-build
@@ -172,11 +147,8 @@ RUN mkdir -p /out && \
 ### Binaries (bin-main)
 FROM scratch AS bin-main
 COPY --from=rootlesskit-build /out/* /
-COPY --from=slirp4netns-build /out/* /
 COPY --from=fuse-overlayfs-build /out/* /
 COPY --from=crun-build /out/* /
-COPY --from=containerd-build /out/* /
-COPY --from=containerd-fuse-overlayfs-build /out/* /
 COPY --from=crio-build /out/* /
 COPY --from=conmon-build /out/* /
 # can't use wildcard here: https://github.com/rootless-containers/usernetes/issues/78

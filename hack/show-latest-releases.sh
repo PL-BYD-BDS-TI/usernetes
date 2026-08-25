@@ -39,16 +39,13 @@ print(versions[-1])
 }
 
 y ROOTLESSKIT_COMMIT rootless-containers/rootlesskit
-y CONTAINERD_COMMIT containerd/containerd
 x CRIO_COMMIT cri-o/cri-o
 
 y KUBE_NODE_COMMIT kubernetes/kubernetes
 
-x SLIRP4NETNS_RELEASE rootless-containers/slirp4netns
 x CONMON_RELEASE containers/conmon
 x CRUN_RELEASE containers/crun
 x FUSE_OVERLAYFS_RELEASE containers/fuse-overlayfs
-x CONTAINERD_FUSE_OVERLAYFS_RELEASE containerd/fuse-overlayfs-snapshotter
 y KUBE_MASTER_RELEASE kubernetes/kubernetes
 y KUBE_GIT_VERSION kubernetes/kubernetes
 x CNI_PLUGINS_RELEASE containernetworking/plugins
