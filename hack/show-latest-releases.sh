@@ -52,7 +52,6 @@ x CONTAINERD_FUSE_OVERLAYFS_RELEASE containerd/fuse-overlayfs-snapshotter
 y KUBE_MASTER_RELEASE kubernetes/kubernetes
 y KUBE_GIT_VERSION kubernetes/kubernetes
 x CNI_PLUGINS_RELEASE containernetworking/plugins
-#z CILIUM_RELEASE cilium/cilium
 y FLANNEL_CNI_PLUGIN_RELEASE flannel-io/cni-plugin
 x FLANNEL_RELEASE flannel-io/flannel
 z ETCD_RELEASE etcd-io/etcd
