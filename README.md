@@ -7,7 +7,6 @@ Usernetes aims to provide a reference distribution of Kubernetes that can be ins
 
 
 - [Included components](#included-components)
-- [Adoption](#adoption)
 - [How it works](#how-it-works)
 - [Restrictions](#restrictions)
 - [Requirements](#requirements)
@@ -347,7 +346,7 @@ $ pid=$(cat $XDG_RUNTIME_DIR/usernetes/rootlesskit/child_pid)
 $ socat -t -- TCP-LISTEN:30080,reuseaddr,fork EXEC:"nsenter -U -n -t $pid socat -t -- STDIN TCP4\:127.0.0.1\:30080"
 ```
 
-Alternatively, you can manually create relevant NAT in NFTables.
+Alternatively, you can manually create relevant forwarding rules in NFTables.
 
 ### Routing ping packets
 
