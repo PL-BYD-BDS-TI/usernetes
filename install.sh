@@ -437,12 +437,13 @@ EOF
 		cat <<EOF | x u7s-flanneld.service
 [Unit]
 Description=Usernetes flanneld service
-BindsTo=u7s-rootlesskit.service
-Requires=u7s-master.target
-After=u7s-master.target
+BindsTo=u7s-kube-apiserver.service
 PartOf=u7s-node.target
 
 [Service]
+Type=notify
+NotifyAccess=all
+TimeoutStartSec=30
 ExecStart=${base}/boot/flanneld.sh
 ${service_common}
 EOF
@@ -467,9 +468,9 @@ set -x
 kubectl apply -f ${base}/manifests/kube-subnet-mgr.yaml
 set +x
 
-INFO "Starting u7s.target"
+INFO "Starting u7s-node.target"
 set -x
-time systemctl --user start -T u7s.target
+time systemctl --user start -T u7s-node.target
 set +x
 
 if systemctl --user -q is-active u7s.target; then
@@ -477,14 +478,14 @@ if systemctl --user -q is-active u7s.target; then
 	set -x
 	systemctl --user --all --no-pager list-units 'u7s-*'
 	# sleep for waiting the node to be available
-	sleep 3
+	sleep 5
 	kubectl get nodes -o wide
 	kubectl apply -f ${base}/manifests/coredns.yaml
 	set +x
 	INFO "Waiting for CoreDNS pods to be available"
 	set -x
 	# sleep for waiting the pod object to be created
-	sleep 3
+	sleep 5
 	kubectl -n kube-system wait --for=condition=ready pod -l k8s-app=kube-dns
 	kubectl get pods -A -o wide
 	set +x

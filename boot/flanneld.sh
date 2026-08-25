@@ -13,7 +13,7 @@ export NODE_NAME="$(hostname -s)"
 export KUBECONFIG="$XDG_CONFIG_HOME/usernetes/node/kube-subnet-mgr.kubeconfig"
 
 PROBES=30
-while [[ PROBES -gt 0 ]] && [[ -n "$(kubectl get node $NODE_NAME -o jsonpath='{.spec.podCIDR}')" ]]; do
+while [[ PROBES -gt 0 ]] && [[ -z "$(kubectl get node $NODE_NAME -o jsonpath='{.spec.podCIDR}')" ]]; do
 	sleep 1
 	PROBES=$((PROBES-1))
 done
