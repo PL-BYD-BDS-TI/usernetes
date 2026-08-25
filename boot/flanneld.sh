@@ -10,8 +10,21 @@ if [[ $U7S_FLANNEL != 1 ]]; then
 fi
 
 export NODE_NAME="$(hostname -s)"
+export KUBECONFIG="$XDG_CONFIG_HOME/usernetes/node/kube-subnet-mgr.kubeconfig"
 
-exec flanneld \
+PROBES=30
+while [[ PROBES -gt 0 ]] && [[ -n "$(kubectl get node $NODE_NAME -o jsonpath='{.spec.podCIDR}')" ]]; do
+	sleep 1
+	PROBES=$((PROBES-1))
+done
+
+if [[ PROBES -le 0 ]]; then
+	echo 'Node not ready'
+	exit 1
+fi
+
+# Run flanneld as child process
+( flanneld \
 	--iface-can-reach "$U7S_PARENT_IP" \
 	--ip-masq \
 	--public-ip "$U7S_PARENT_IP" \
@@ -20,4 +33,11 @@ exec flanneld \
 	--kube-annotation-prefix "flannel.io" \
 	--kubeconfig-file "$XDG_CONFIG_HOME/usernetes/node/kube-subnet-mgr.kubeconfig" \
 	--net-config-path="$U7S_BASE_DIR/config/flannel/etcd/coreos.com_network_config" \
-	$@
+	$@ ) &
+CHILD=$!
+
+systemd-notify --ready
+
+trap "systemd-notify --stopping; kill $CHILD" SIGINT
+
+wait

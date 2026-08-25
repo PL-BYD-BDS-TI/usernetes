@@ -165,7 +165,6 @@ cfssl_gencert_master "service-account"
 for n in "${nodes[@]}"; do
 	nodename=$(echo $n | sed -e 's/,.*//g')
 	node_d="${dir}/nodes.${nodename}"
-	peer_d="${dir}/peers.${nodename}"
 	mkdir -p "${node_d}"
 	if [[ -f "${node_d}/master" ]]; then
 		log::info "Already exists: ${node_d}/master"
@@ -219,18 +218,11 @@ EOF
 	create_kubeconfig ${node_d}/node.kubeconfig ${nodename} https://${master}:6443 ${node_d}/ca.pem ${node_d}/node.pem ${node_d}/node-key.pem
 
 	# Certificates for etcd/netsy peers
-	mkdir -p "${peer_d}"
-	if [[ -f "${peer_d}/ca.pem" ]]; then
-		log::info "Already exists: ${peer_d}/ca.pem"
+	if [[ -f "${node_d}/etcd-peer.pem" ]]; then
+		log::info "Already exists: ${node_d}/etcd-peer.pem"
 	else
-		log::info "Copying ${master_d}/ca.pem to ${peer_d}/ca.pem"
-		cp -f ${master_d}/ca.pem ${peer_d}/ca.pem
-	fi
-	if [[ -f "${peer_d}/node.pem" ]]; then
-		log::info "Already exists: ${peer_d}/node.pem"
-	else
-		log::info "Creating ${peer_d}/{peer.pem,peer-key.pem}"
-		cat >${peer_d}/peer-csr.json <<EOF
+		log::info "Creating ${node_d}/{etcd-peer.pem,etcd-peer-key.pem}"
+		cat >${node_d}/etcd-peer-csr.json <<EOF
 {
   "CN": "${nodename}",
   "key": {
@@ -253,10 +245,10 @@ EOF
 			-config="$cc/ca-config.json" \
 			-hostname="${n},netsy://u7s-db/peer/${nodename}" \
 			-profile=kubernetes \
-			"${peer_d}/peer-csr.json" | cfssljson -bare "${peer_d}/peer"
+			"${node_d}/etcd-peer-csr.json" | cfssljson -bare "${node_d}/etcd-peer"
 	fi
+
 	# DONE
-	touch ${peer_d}/done
 	touch ${node_d}/done
 done
 

@@ -24,7 +24,7 @@
 
   // Replication stream between Primary and Replicas
   "replication": {
-    "quorum": -1,                     // -1 = majority, 0 = disabled (sync to object storage), positive int = static
+    "quorum": 0,                     // -1 = majority, 0 = disabled (sync to object storage), positive int = static
     "degradation_count": 2,           // number of missed Heartbeats/Receipts before Replica is excluded from quorum
     // Buffer for async object storage writes
     "chunk_buffer": {

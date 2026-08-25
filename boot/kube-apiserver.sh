@@ -6,7 +6,8 @@ exec $(dirname $0)/nsenter.sh kube-apiserver \
 	--etcd-cafile=$XDG_CONFIG_HOME/usernetes/node/ca.pem \
 	--etcd-certfile=$XDG_CONFIG_HOME/usernetes/node/node.pem \
 	--etcd-keyfile=$XDG_CONFIG_HOME/usernetes/node/node-key.pem \
-	--etcd-servers "$ETCD_ENDPOINTS" \
+	--etcd-servers="$ETCD_ENDPOINTS" \
+	--etcd-compaction-interval=0 \
 	--client-ca-file=$XDG_CONFIG_HOME/usernetes/master/ca.pem \
 	--kubelet-certificate-authority=$XDG_CONFIG_HOME/usernetes/master/ca.pem \
 	--kubelet-client-certificate=$XDG_CONFIG_HOME/usernetes/master/kubernetes.pem \

@@ -10,4 +10,6 @@ exec $(dirname $0)/nsenter.sh kube-controller-manager \
 	--root-ca-file=$XDG_CONFIG_HOME/usernetes/master/ca.pem \
 	--service-account-private-key-file=$XDG_CONFIG_HOME/usernetes/master/service-account-key.pem \
 	--use-service-account-credentials=true \
+	--allocate-node-cidrs=true \
+	--cluster-cidr="10.5.0.0/16" \
 	$@

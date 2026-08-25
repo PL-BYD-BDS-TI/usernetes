@@ -280,8 +280,8 @@ LimitNOFILE=65536
 cat <<EOF | x u7s.target
 [Unit]
 Description=Usernetes target (all components in the single node)
-Requires=u7s-${db}.target u7s-master.target u7s-node.target
-After=u7s-${db}.target u7s-master.target u7s-node.target
+Requires=u7s-master.target u7s-node.target
+After=u7s-master.target u7s-node.target
 
 [Install]
 WantedBy=default.target
@@ -313,37 +313,18 @@ EOF
 fi
 
 ### etcd or netsy
-cat <<EOF | x u7s-${db}.target
+cat <<EOF | x u7s-${db}.service
 [Unit]
-Description=Usernetes target for $db
-Requires=u7s-${db}.service
-After=u7s-${db}.service
-EOF
-
-if [[ "$db" == 'etcd' ]]; then
-cat <<EOF | x u7s-etcd.service
-[Unit]
-Description=Usernetes etcd service
-PartOf=u7s-etcd.target
+Description=Usernetes ${db} service
 
 [Service]
 Type=notify
 NotifyAccess=all
-ExecStart=${base}/boot/etcd.sh
+TimeoutStartSec=120
+ExecStart=${base}/boot/${db}.sh
 ${service_common}
 EOF
-elif [[ "$db" == 'netsy' ]]; then
-cat <<EOF | x u7s-netsy.service
-[Unit]
-Description=Usernetes netsy service
-PartOf=u7s-netsy.target
 
-[Service]
-Type=exec
-ExecStart=${base}/boot/netsy.sh
-${service_common}
-EOF
-fi
 
 ### master
 cat <<EOF | x u7s-master.target
@@ -457,8 +438,8 @@ EOF
 [Unit]
 Description=Usernetes flanneld service
 BindsTo=u7s-rootlesskit.service
-Requires=u7s-kube-apiserver.service
-After=u7s-kube-apiserver.service
+Requires=u7s-master.target
+After=u7s-master.target
 PartOf=u7s-node.target
 
 [Service]
@@ -469,19 +450,27 @@ EOF
 fi
 
 ### Finish installation
-INFO "Starting u7s.target"
+INFO "Enabling u7s.target"
 set -x
 systemctl --user -T enable u7s.target
-time systemctl --user start -T u7s-db.target u7s-rootlesskit.service u7s-kube-apiserver.service
+set +x
+INFO "Starting u7s-master.target"
+set -x
+time systemctl --user start -T u7s-master.target
 set +x
 
 PATH="${base}/bin:$PATH"
 KUBECONFIG="${config_dir}/usernetes/master/admin.kubeconfig"
 export PATH KUBECONFIG
 
+set -x
 kubectl apply -f ${base}/manifests/kube-subnet-mgr.yaml
+set +x
 
+INFO "Starting u7s.target"
+set -x
 time systemctl --user start -T u7s.target
+set +x
 
 if systemctl --user -q is-active u7s.target; then
 	INFO "Installing CoreDNS"
