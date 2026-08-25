@@ -33,7 +33,9 @@ Usernetes aims to provide a reference distribution of Kubernetes that can be ins
 ## Included components
 
 * Installer scripts
-* Rootless Containers infrastructure ([RootlessKit](https://github.com/rootless-containers/rootlesskit), [slirp4netns](https://github.com/rootless-containers/slirp4netns), and [fuse-overlayfs](https://github.com/containers/fuse-overlayfs))
+* Rootless Containers infrastructure
+  * [RootlessKit](https://github.com/rootless-containers/rootlesskit)
+  * [fuse-overlayfs](https://github.com/containers/fuse-overlayfs)
 * Master components (`etcd`, `kube-apiserver`, ...)
 * Node components (`kubelet` and `kube-proxy`)
 * CRI runtime
@@ -46,42 +48,23 @@ Usernetes aims to provide a reference distribution of Kubernetes that can be ins
 
 Installer scripts are in POC status.
 
-See [Adoption](#adoption) for Usernetes-based Kubernetes distributions.
-
-> **Note**
->
-> [Usernetes no longer includes Docker (Moby) binaries since February 2020.](https://github.com/rootless-containers/usernetes/pull/126)
->
-> To install Rootless Docker, see https://get.docker.com/rootless .
->
-> See also https://docs.docker.com/engine/security/rootless/ for the further information.
-
-## Adoption
-
-We encourage other Kubernetes distributions to adopt Usernetes.
-
-Currently, the following distributions adopt Usernetes:
-* [k3s](https://github.com/k3s-io/k3s/blob/master/k3s-rootless.service)
-* [Silverkube](https://github.com/podenv/silverkube)
-
 ## How it works
 
 Usernetes executes Kubernetes and CRI runtimes without the root privileges by using unprivileged [`user_namespaces(7)`](http://man7.org/linux/man-pages/man7/user_namespaces.7.html), [`mount_namespaces(7)`](http://man7.org/linux/man-pages/man7/mount_namespaces.7.html), and [`network_namespaces(7)`](http://man7.org/linux/man-pages/man7/network_namespaces.7.html).
 
-To set up NAT across the host and the network namespace without the root privilege, Usernetes uses a usermode network stack ([slirp4netns](https://github.com/rootless-containers/slirp4netns)).
+To set up NAT across the host and the network namespace without the root privilege, Usernetes uses a separated in-kernel network stack as regular user ([`lxc-user-nic(1)`](https://www.man7.org/linux/man-pages/man1/lxc-user-nic.1.html) mode in rootlesskit).
 
-No SETUID/SETCAP binary is needed, except [`newuidmap(1)`](http://man7.org/linux/man-pages/man1/newuidmap.1.html) and [`newgidmap(1)`](http://man7.org/linux/man-pages/man1/newgidmap.1.html), which are used for setting up [`user_namespaces(7)`](http://man7.org/linux/man-pages/man7/user_namespaces.7.html) with multiple sub-UIDs and sub-GIDs.
+No SETUID/SETCAP binary is needed, except [`newuidmap(1)`](http://man7.org/linux/man-pages/man1/newuidmap.1.html) and [`newgidmap(1)`](http://man7.org/linux/man-pages/man1/newgidmap.1.html), which are used for setting up [`user_namespaces(7)`](http://man7.org/linux/man-pages/man7/user_namespaces.7.html) with multiple sub-UIDs and sub-GIDs, and [`lxc-user-nic(1)`](https://www.man7.org/linux/man-pages/man1/lxc-user-nic.1.html) for setting up the network stack.
 
 ## Restrictions
 
-* Usermode networking called [slirp4netns](https://github.com/rootless-containers/slirp4netns) is used instead of kernel-mode [vEth](http://man7.org/linux/man-pages/man4/veth.4.html) pairs.
 * [fuse-overlayfs](https://github.com/containers/fuse-overlayfs) is used instead of kernel-mode overlayfs.
 * Node ports are network-namespaced
 * Apparmor is unsupported
 
 ## Requirements
 
-Recommended host distributions are Ubuntu 22.04 and Fedora 38.
+Recommended host distribution is Ubuntu 26.04.
 
 The following requirements have to be satisfied:
 
@@ -96,6 +79,8 @@ The following requirements have to be satisfied:
 * `iptables` binary. Provided by `iptables` package on most distros.
 
 * `conntrack` binary. Provided by `conntrack` package on most distros.
+
+* `lxc-user-nic` binary. Provided by `lxc` package.
 
 * `newuidmap` and `newgidmap` binaries. Provided by `uidmap` package on most distros.
 
@@ -136,6 +121,7 @@ xt_mark
 xt_multiport
 xt_nat
 xt_tcpudp
+vxlan
 ```
 
 ### cgroup v2
@@ -183,61 +169,85 @@ $ cd usernetes
 
 ### Install
 
-`install.sh` installs Usernetes systemd units to `$HOME/.config/systemd/unit`.
+`install.sh` installs Usernetes systemd units to `$HOME/.config/systemd/user`.
 
-To use containerd as the CRI runtime (default):
+To use etcd as the underlying database (default):
 ```console
-$ ./install.sh --cri=containerd
+$ ./install.sh --db=etcd
 [INFO] Base dir: /home/exampleuser/gopath/src/github.com/rootless-containers/usernetes
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s.target
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-rootlesskit.service
-[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-etcd.target
-[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-etcd.service
+[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-netsy.service
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-master.target
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kube-apiserver.service
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kube-controller-manager.service
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kube-scheduler.service
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-node.target
-[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-containerd.service
-[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kubelet-containerd.service
+[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kubelet-crio.service
 [INFO] Installing /home/exampleuser/.config/systemd/user/u7s-kube-proxy.service
-[INFO] Starting u7s.target
+[INFO] Installing /home/exampleuser/.config/systemd/user/u7s-flanneld.service
+[INFO] Enabling u7s.target
 + systemctl --user -T enable u7s.target
-Created symlink /home/exampleuser/.config/systemd/user/multi-user.target.wants/u7s.target → /home/exampleuser/.config/systemd/user/u7s.target.
-+ systemctl --user -T start u7s.target
-Enqueued anchor job 522 u7s.target/start.
-Enqueued auxiliary job 538 u7s-rootlesskit.service/start.
-Enqueued auxiliary job 542 u7s-kubelet-containerd.service/start.
-Enqueued auxiliary job 541 u7s-containerd.service/start.
-Enqueued auxiliary job 524 u7s-etcd.service/start.
-Enqueued auxiliary job 546 u7s-kube-controller-manager.service/start.
-Enqueued auxiliary job 523 u7s-etcd.target/start.
-Enqueued auxiliary job 543 u7s-master.target/start.
-Enqueued auxiliary job 544 u7s-kube-scheduler.service/start.
-Enqueued auxiliary job 545 u7s-kube-apiserver.service/start.
-Enqueued auxiliary job 539 u7s-node.target/start.
-Enqueued auxiliary job 540 u7s-kube-proxy.service/start.
-+ systemctl --user --no-pager status
-● localhost
-    State: running
-...
+Created symlink /home/exampleuser/.config/systemd/user/default.target.wants/u7s.target → /home/exampleuser/.config/systemd/user/u7s.target.
++ set +x
+[INFO] Starting u7s-master.target
++ systemctl --user start -T u7s-master.target
+Enqueued anchor job 25324 u7s-master.target/start.
+Enqueued auxiliary job 25346 u7s-kube-scheduler.service/start.
+Enqueued auxiliary job 25326 u7s-rootlesskit.service/start.
+Enqueued auxiliary job 25325 u7s-kube-controller-manager.service/start.
+Enqueued auxiliary job 25345 u7s-netsy.service/start.
+Enqueued auxiliary job 25344 u7s-kube-apiserver.service/start.
+
+real	0m13.481s
+user	0m0.000s
+sys	0m0.004s
++ set +x
+[INFO] Setting up ClusterRole and ClusterRoleBinding for 'system:kube-subnet-mgr' (flannel)
++ kubectl apply -f /home/exampleuser/gopath/src/github.com/rootless-containers/usernetes/manifests/kube-subnet-mgr.yaml
+clusterrole.rbac.authorization.k8s.io/kube-subnet-mgr unchanged
+clusterrolebinding.rbac.authorization.k8s.io/kube-subnet-mgr unchanged
++ set +x
+[INFO] Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'
++ kubectl apply -f /home/exampleuser/gopath/src/github.com/rootless-containers/usernetes/manifests/apiserver-kubelet-admin.yaml
+Warning: resource clusterrolebindings/apiserver-kubelet-admin is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+clusterrolebinding.rbac.authorization.k8s.io/apiserver-kubelet-admin configured
++ set +x
+[INFO] Installing CoreDNS
++ kubectl apply -f /home/exampleuser/gopath/src/github.com/rootless-containers/usernetes/manifests/coredns.yaml
+serviceaccount/coredns unchanged
+clusterrole.rbac.authorization.k8s.io/u7s-coredns unchanged
+clusterrolebinding.rbac.authorization.k8s.io/u7s-coredns unchanged
+configmap/coredns unchanged
+deployment.apps/coredns unchanged
+service/kube-dns unchanged
++ set +x
+[INFO] Starting u7s.target
++ systemctl --user start -T u7s.target
+Enqueued anchor job 25347 u7s.target/start.
+Enqueued auxiliary job 25372 u7s-flanneld.service/start.
+Enqueued auxiliary job 25371 u7s-node.target/start.
+Enqueued auxiliary job 25374 u7s-kube-proxy.service/start.
+Enqueued auxiliary job 25373 u7s-kubelet-crio.service/start.
+
+real	0m1.095s
+user	0m0.002s
+sys	0m0.002s
++ set +x
 [INFO] Installation complete.
 [INFO] Hint: `sudo loginctl enable-linger` to start user services automatically on the system start up.
-[INFO] Hint: export KUBECONFIG=/home/exampleuser/.config/usernetes/master/admin-localhost.kubeconfig
+[INFO] Hint: export KUBECONFIG=/home/exampleuser/.config/usernetes/master/admin.kubeconfig
 ```
 
-CoreDNS is automatically enabled since November 2021.
-Older releases of Usernetes had required installing CoreDNS from [`manifests/coredns.yaml`](./manifests/coredns.yaml).
-
-To use CRI-O:
+To use netsy as the underlying database:
 ```console
-$ ./install.sh --cri=crio
+$ ./install.sh --db=netsy
 ```
 
 ### Use `kubectl`
 
 ```console
-$ export KUBECONFIG="$HOME/.config/usernetes/master/admin-localhost.kubeconfig"
+$ export KUBECONFIG="$HOME/.config/usernetes/master/admin.kubeconfig"
 $ kubectl get nodes -o wide
 ```
 
@@ -257,27 +267,24 @@ $ eval $(./show-cleanup-command.sh)
 
 All-in-one Docker image is available as [`ghcr.io/rootless-containers/usernetes`](https://ghcr.io/rootless-containers/usernetes) on GHCR.
 
-:warning: [`rootlesscontainers/usernetes`](https://hub.docker.com/r/rootlesscontainers/usernetes) on Docker Hub is no longer updated.
-Please use the GHCR image.
-
 To build the image manually:
 
 ```console
 $ docker build -t ghcr.io/rootless-containers/usernetes .
 ```
 
-The image is based on Fedora.
+The image is based on Ubuntu.
 
 ### Single node
 
 ```console
-$ docker run -td --name usernetes-node -p 127.0.0.1:6443:6443 --privileged ghcr.io/rootless-containers/usernetes --cri=containerd
+$ docker run -td --name usernetes-node -p 127.0.0.1:6443:6443 --privileged ghcr.io/rootless-containers/usernetes --db=etcd
 ```
 
 Wait until `docker ps` shows "healty" as the status of `usernetes-node` container.
 
 ```console
-$ docker cp usernetes-node:/home/user/.config/usernetes/master/admin-localhost.kubeconfig docker.kubeconfig
+$ docker cp usernetes-node:/home/user/.config/usernetes/master/admin.kubeconfig docker.kubeconfig
 $ export KUBECONFIG=./docker.kubeconfig
 $ kubectl run -it --rm --image busybox foo
 / #
@@ -290,14 +297,14 @@ $ make up
 $ export KUBECONFIG=$HOME/.config/usernetes/docker-compose.kubeconfig
 ```
 
-Flannel VXLAN `10.5.0.0/16` is configured by default.
+Flannel virtual network (Wireguard) `10.5.0.0/16` is configured by default.
 
 ```console
 $ kubectl get nodes -o wide
 NAME           STATUS   ROLES    AGE     VERSION           INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
 967e81e90e1f   Ready    <none>   3m42s   v1.14-usernetes   10.0.101.100   <none>        Ubuntu 18.04.1 LTS   4.15.0-43-generic   docker://Unknown
 b2204f192e5c   Ready    <none>   3m42s   v1.14-usernetes   10.0.102.100   <none>        Ubuntu 18.04.1 LTS   4.15.0-43-generic   cri-o://1.14.0-dev
-ba0133c68378   Ready    <none>   3m42s   v1.14-usernetes   10.0.103.100   <none>        Ubuntu 18.04.1 LTS   4.15.0-43-generic   containerd://1.2.0-168-gb3807c5d
+ba0133c68378   Ready    <none>   3m42s   v1.14-usernetes   10.0.103.100   <none>        Ubuntu 18.04.1 LTS   4.15.0-43-generic   cri-o://1.14.0-dev
 $ kubectl run --replicas=3 --image=nginx:alpine nginx
 $ kubectl get pods -o wide
 NAME                     READY   STATUS    RESTARTS   AGE   IP          NODE           NOMINATED NODE   READINESS GATES
@@ -324,8 +331,8 @@ Connecting to 10.5.7.3 (10.5.7.3:80)
 
 ### Expose netns ports to the host
 
-As Usernetes runs in a network namespace (with [slirp4netns](https://github.com/rootless-containers/slirp4netns)),
-you can't expose container ports to the host by just running `kubectl expose --type=NodePort`.
+As Usernetes runs in a network namespace, you can't expose container ports to the host
+by just running `kubectl expose --type=NodePort`.
 
 In addition, you need to expose Usernetes netns ports to the host:
 
@@ -339,6 +346,8 @@ You can also manually expose Usernetes netns ports manually with `socat`:
 $ pid=$(cat $XDG_RUNTIME_DIR/usernetes/rootlesskit/child_pid)
 $ socat -t -- TCP-LISTEN:30080,reuseaddr,fork EXEC:"nsenter -U -n -t $pid socat -t -- STDIN TCP4\:127.0.0.1\:30080"
 ```
+
+Alternatively, you can manually create relevant NAT in NFTables.
 
 ### Routing ping packets
 
@@ -354,23 +363,16 @@ $ sudo sh -c "echo 0   2147483647  > /proc/sys/net/ipv4/ping_group_range"
   * 10.0.0.1: The kube-apiserver ClusterIP
   * 10.0.0.53: The CoreDNS ClusterIP
 
-* 10.0.42.0/24: The default CIDR for the RootlessKit network namespace. Can be overridden with `install.sh --cidr=<CIDR>`. 
-  * 10.0.42.2: The slirp4netns gateway
-  * 10.0.42.3: The slirp4netns DNS
-  * 10.0.42.100: The slirp4netns TAP device
-
 * 10.0.100.0/24: The CIDR used instead of 10.0.42.0/24 in Docker Compose master
-* 10.0.101.0/24: The CIDR used instead of 10.0.42.0/24 in Docker Compose containerd node
 * 10.0.102.0/24: The CIDR used instead of 10.0.42.0/24 in Docker Compose CRI-O node
 
 * 10.5.0.0/16: The CIDR for Flannel
-
-* 10.88.0.0/16: The CIDR for single-node CNI
 
 ### Install Usernetes from source
 
 Docker 17.05+ is required for building Usernetes from the source.
 Docker 18.09+ with `DOCKER_BUILDKIT=1` is recommended.
+Build is also proven as working with Podman 5.8+.
 
 ```console
 $ make
@@ -386,5 +388,4 @@ The binary releases of Usernetes contain files that are licensed under the terms
 
 * `bin/crun`:  [GNU GENERAL PUBLIC LICENSE Version 2](docs/binary-release-license/LICENSE-crun), see https://github.com/containers/crun
 * `bin/fuse-overlayfs`:  [GNU GENERAL PUBLIC LICENSE Version 2](docs/binary-release-license/LICENSE-fuse-overlayfs), see https://github.com/containers/fuse-overlayfs
-* `bin/slirp4netns`: [GNU GENERAL PUBLIC LICENSE Version 2](docs/binary-release-license/LICENSE-slirp4netns), see https://github.com/rootless-containers/slirp4netns
 * `bin/{cfssl,cfssljson}`: [2-Clause BSD License](docs/binary-release-license/LICENSE-cfssl), see https://github.com/cloudflare/cfssl
