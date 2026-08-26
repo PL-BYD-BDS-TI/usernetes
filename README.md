@@ -81,6 +81,8 @@ The following requirements have to be satisfied:
 
 * `lxc-user-nic` binary. Provided by `lxc` package.
 
+* `uuidgen` binary. Provided by `uuid-runtime` package.
+
 * `newuidmap` and `newgidmap` binaries. Provided by `uidmap` package on most distros.
 
 * `/etc/subuid` and `/etc/subgid` should contain more than 65536 sub-IDs. e.g. `exampleuser:231072:65536`. These files are automatically configured on most distros.

@@ -178,7 +178,7 @@ for f in $(cat ${base}/config/modules-load.d/u7s.conf); do
 	if grep -qw "^$f" /proc/modules; then
 		INFO "Kernel module $f is loaded"
 	elif grep -qw "${f}.ko$" /lib/modules/$(uname -r)/modules.builtin; then
-		WARNING "Kernel is built with $f"
+		INFO "Kernel is built with $f"
 	else
 		ERROR "Kernel module $f is not loaded"
 		exit 1
@@ -215,17 +215,7 @@ if [ "$cni" = "flannel" ]; then
 U7S_FLANNEL=1
 EOF
 fi
-if [ "$db" = "etcd" ]; then
-	ip=$(hostname -i | sed -e 's/ .*//g')
-	if hostname -I &>/dev/null ; then
-		ip=$(hostname -I | sed -e 's/ .*//g')
-	fi
-	cat <<EOF >>${config_dir}/usernetes/env
-ETCD_INITIAL_CLUSTER="$(hostname -s)=https://${ip}:2380"
-ETCD_INITIAL_CLUSTER_TOKEN="$(uuidgen -n @x500 -N u7s-nodes -s)"
-ETCD_INITIAL_CLUSTER_STATE=new
-EOF
-fi
+
 # if [ -n "$cidr" ]; then
 # 	cat <<EOF >>${config_dir}/usernetes/env
 # U7S_ROOTLESSKIT_FLAGS=--cidr=${cidr}
@@ -250,15 +240,26 @@ elif [[ ! -d ${config_dir}/usernetes/master ]]; then
 	cfssldir=$(mktemp -d /tmp/cfssl.XXXXXXXXX)
 	ip=$(hostname -I | cut -d' ' -f1)
 	hostname=$(hostname -s)
-	${base}/common/cfssl.sh --dir=${cfssldir} --master=$hostname --node=$hostname,$ip,127.0.0.1
+	${base}/common/cfssl.sh --dir=${cfssldir} --master=$hostname --node=$hostname,$ip
 	rm -rf ${config_dir}/usernetes/{master,node}
 	cp -r "${cfssldir}/master" ${config_dir}/usernetes/master
 	cp -r "${cfssldir}/nodes.$node" ${config_dir}/usernetes/node
 	rm -rf "${cfssldir}"
 fi
 
-# Copy netsy cluster config file
-cp -r "${base}/config/netsy" "${config_dir}/usernetes/netsy"
+# Configure backend db cluster for kubernetes
+if [ "$db" = "etcd" ]; then
+	mkdir -p "${config_dir}/usernetes/etcd"
+	# Create env file with initial parameters for etcd cluster
+	cat <<EOF >>${config_dir}/usernetes/etcd/env
+ETCD_INITIAL_CLUSTER="$(while read n; do awk -F',' '{print $1"=https://"$2":2380";}' <<< "$n"; done <"${config_dir}/usernetes/master/nodes" | tr '\n' ',' | sed -e 's/,*$//g')"
+ETCD_INITIAL_CLUSTER_TOKEN="$(<"${config_dir}/usernetes/master/token")"
+ETCD_INITIAL_CLUSTER_STATE=new
+EOF
+elif [ "$db" = "netsy" ]; then
+	# Copy netsy cluster config files
+	cp -r "${base}/config/netsy" "${config_dir}/usernetes/netsy"
+fi
 
 ### Begin installation
 INFO "Base dir: ${base}"
@@ -324,7 +325,11 @@ TimeoutStartSec=300
 ExecStart=${base}/boot/${db}.sh
 ${service_common}
 EOF
-
+if [ "$db" = "etcd" ]; then
+	cat >> ${config_dir}/systemd/user/u7s-etcd.service <<EOF
+EnvironmentFile=${config_dir}/usernetes/etcd/env
+EOF
+fi
 
 ### master
 cat <<EOF | x u7s-master.target

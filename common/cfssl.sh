@@ -2,8 +2,9 @@
 # CFSSL tool (called only via install.sh)
 #
 # ref: https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/1.15.3/docs/04-certificate-authority.md
-export U7S_BASE_DIR=$(realpath $(dirname $0)/..)
-source $U7S_BASE_DIR/common/common.inc.sh
+U7S_BASE_DIR="$(realpath "$(dirname "$0")/..")"
+export U7S_BASE_DIR
+source "$U7S_BASE_DIR/common/common.inc.sh"
 
 # global vars
 arg0="$0"
@@ -162,6 +163,7 @@ fi
 cfssl_gencert_master "service-account"
 
 # Nodes
+touch ${master_d}/nodes
 for n in "${nodes[@]}"; do
 	nodename=$(echo $n | sed -e 's/,.*//g')
 	node_d="${dir}/nodes.${nodename}"
@@ -204,7 +206,7 @@ EOF
 			-ca="${master_d}/ca.pem" \
 			-ca-key="${master_d}/ca-key.pem" \
 			-config="$cc/ca-config.json" \
-			-hostname=${n},netsy://u7s-db/client/${nodename} \
+			-hostname=${n},127.0.0.1,netsy://u7s-db/client/${nodename} \
 			-profile=kubernetes \
 			"${node_d}/node-csr.json" | cfssljson -bare "${node_d}/node"
 	fi
@@ -243,14 +245,19 @@ EOF
 			-ca="${master_d}/ca.pem" \
 			-ca-key="${master_d}/ca-key.pem" \
 			-config="$cc/ca-config.json" \
-			-hostname="${n},netsy://u7s-db/peer/${nodename}" \
+			-hostname="${n},127.0.0.1,netsy://u7s-db/peer/${nodename}" \
 			-profile=kubernetes \
 			"${node_d}/etcd-peer-csr.json" | cfssljson -bare "${node_d}/etcd-peer"
 	fi
 
+	echo "${n}" >> ${master_d}/nodes
+
 	# DONE
 	touch ${node_d}/done
 done
+
+# Cluster token for etcd
+uuidgen > ${master_d}/token
 
 # DONE
 touch ${master_d}/done
