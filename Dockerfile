@@ -22,6 +22,7 @@ ARG FLANNEL_RELEASE=v0.28.9
 ARG ETCD_RELEASE=v3.7.1
 ARG NETSY_RELEASE=1.1.1
 ARG CFSSL_RELEASE=1.6.5
+ARG WG_TOOLS_RELEASE=v1.0.20260223
 
 ARG ALPINE_RELEASE=3.24
 ARG GO_RELEASE=1.27.0
@@ -29,13 +30,22 @@ ARG UBUNTU_RELEASE=resolute
 
 ### Common base images (common-*)
 FROM docker.io/alpine:${ALPINE_RELEASE} AS common-alpine
-RUN apk add -q --no-cache git build-base autoconf automake libtool wget
+RUN apk add -q --no-cache git build-base autoconf automake libtool wget linux-headers gcc
 
 FROM docker.io/golang:${GO_RELEASE}-alpine${ALPINE_RELEASE} AS common-golang-alpine
 RUN apk add -q --no-cache git
 
 FROM common-golang-alpine AS common-golang-alpine-heavy
-RUN apk -q --no-cache add bash build-base linux-headers libseccomp-dev libseccomp-static gcc
+RUN apk -q --no-cache add bash build-base libseccomp-dev libseccomp-static linux-headers gcc
+
+### Wireguard Tools (wg-tools-build)
+FROM common-alpine AS wg-tools-build
+RUN git clone -q https://git.zx2c4.com/wireguard-tools.git /root/src/git.zx2c4.com/wireguard-tools
+WORKDIR /root/src/git.zx2c4.com/wireguard-tools
+ARG WG_TOOLS_RELEASE
+RUN git pull && git checkout ${WG_TOOLS_RELEASE}
+RUN mkdir /out && \
+  gcc -static -DRUNSTATEDIR='"/run"' src/*.c -o /out/wg
 
 ### RootlessKit (rootlesskit-build)
 FROM common-golang-alpine AS rootlesskit-build
@@ -146,6 +156,7 @@ RUN mkdir -p /out && \
 
 ### Binaries (bin-main)
 FROM scratch AS bin-main
+COPY --from=wg-tools-build /out/* /
 COPY --from=rootlesskit-build /out/* /
 COPY --from=fuse-overlayfs-build /out/* /
 COPY --from=crun-build /out/* /
