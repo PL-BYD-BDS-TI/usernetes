@@ -38,6 +38,12 @@ print(versions[-1])
 ')
 }
 
+g() {
+	NAME=$1
+	REPO=$2
+	echo $NAME=$(git -c 'versionsort.suffix=-' ls-remote --refs --tags --sort='v:refname' "$REPO" | tail --lines=1 | cut --delimiter='/' --fields=3)
+}
+
 y ROOTLESSKIT_COMMIT rootless-containers/rootlesskit
 x CRIO_COMMIT cri-o/cri-o
 
@@ -54,6 +60,7 @@ x FLANNEL_RELEASE flannel-io/flannel
 z ETCD_RELEASE etcd-io/etcd
 z NETSY_RELEASE netsy-dev/netsy
 x CFSSL_RELEASE cloudflare/cfssl
+g WG_TOOLS_RELEASE https://git.zx2c4.com/wireguard-tools.git
 
 # echo ALPINE_RELEASE=
 # echo GO_RELEASE=

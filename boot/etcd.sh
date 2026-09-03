@@ -17,4 +17,5 @@ exec etcd \
 	--listen-peer-urls https://0.0.0.0:2380 \
 	--advertise-client-urls https://$U7S_PARENT_IP:2379 \
 	--initial-advertise-peer-urls https://$U7S_PARENT_IP:2380 \
+	--auto-compaction-retention '8h' \
 	$@
