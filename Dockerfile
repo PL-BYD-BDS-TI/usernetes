@@ -2,26 +2,26 @@
 # $ ./hack/translate-dockerfile-runopt-directive.sh < Dockerfile  | DOCKER_BUILDKIT=1 docker build  -f -  .
 
 ### Version definitions
-# use ./hack/show-latest-commits.sh to get the latest commits
+# use ./hack/show-latest-releases.sh to get the latest releases
 
 ARG ROOTLESSKIT_COMMIT=v3.2.0
-ARG CRIO_COMMIT=v1.37.1
+ARG CRIO_COMMIT=v1.37.2
 
-ARG KUBE_NODE_COMMIT=v1.37.0
+ARG KUBE_NODE_COMMIT=v1.37.1
 
 # Version definitions (cont.)
 ARG CONMON_RELEASE=v2.2.1
-ARG CRUN_RELEASE=1.29.1
+ARG CRUN_RELEASE=1.30.1
 ARG FUSE_OVERLAYFS_RELEASE=v1.18
-ARG KUBE_MASTER_RELEASE=v1.37.0
+ARG KUBE_MASTER_RELEASE=v1.37.1
 # Kube's build script requires KUBE_GIT_VERSION to be set to a semver string
-ARG KUBE_GIT_VERSION=v1.37.0
+ARG KUBE_GIT_VERSION=v1.37.1
 ARG CNI_PLUGINS_RELEASE=v1.9.1
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel3
 ARG FLANNEL_RELEASE=v0.28.9
 ARG ETCD_RELEASE=v3.7.2
 ARG NETSY_RELEASE=1.1.1
-ARG CFSSL_RELEASE=1.6.5
+ARG CFSSL_RELEASE=1.7.0
 ARG WG_TOOLS_RELEASE=v1.0.20260223
 
 ARG ALPINE_RELEASE=3.24
@@ -162,7 +162,6 @@ COPY --from=fuse-overlayfs-build /out/* /
 COPY --from=crun-build /out/* /
 COPY --from=crio-build /out/* /
 COPY --from=conmon-build /out/* /
-# can't use wildcard here: https://github.com/rootless-containers/usernetes/issues/78
 COPY --from=cniplugins-build /out/cni /cni
 COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
