@@ -4,7 +4,7 @@
 ### Version definitions
 # use ./hack/show-latest-releases.sh to get the latest releases
 
-ARG ROOTLESSKIT_COMMIT=v3.2.0
+ARG ROOTLESSKIT_COMMIT=v3.3.0
 ARG CRIO_COMMIT=v1.37.2
 
 ARG KUBE_NODE_COMMIT=v1.37.1
@@ -18,14 +18,14 @@ ARG KUBE_MASTER_RELEASE=v1.37.1
 ARG KUBE_GIT_VERSION=v1.37.1
 ARG CNI_PLUGINS_RELEASE=v1.9.1
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel3
-ARG FLANNEL_RELEASE=v0.28.9
+ARG FLANNEL_RELEASE=v0.28.10
 ARG ETCD_RELEASE=v3.7.2
 ARG NETSY_RELEASE=1.1.1
-ARG CFSSL_RELEASE=1.7.0
+ARG CFSSL_RELEASE=1.7.1
 ARG WG_TOOLS_RELEASE=v1.0.20260223
 
 ARG ALPINE_RELEASE=3.24
-ARG GO_RELEASE=1.27.1
+ARG GO_RELEASE=1.27.2
 ARG UBUNTU_RELEASE=resolute
 
 ### Common base images (common-*)
@@ -76,7 +76,8 @@ RUN apk add -q --no-cache gpgme gpgme-dev
 RUN git clone -q https://github.com/cri-o/cri-o.git /go/src/github.com/cri-o/cri-o
 WORKDIR /go/src/github.com/cri-o/cri-o
 ARG CRIO_COMMIT
-RUN git pull && git checkout ${CRIO_COMMIT} && sed -i 's/g\.SetLinuxCgroupsPath("")//' server/rootless_linux.go
+ADD crio_rootless_linux.patch crio_rootless_linux.patch
+RUN git pull && git checkout ${CRIO_COMMIT} && patch server/rootless_linux.go crio_rootless_linux.patch
 RUN EXTRA_LDFLAGS='-linkmode external -extldflags "-static"' make binaries && \
   mkdir /out && cp bin/crio bin/pinns /out
 

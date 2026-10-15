@@ -1,0 +1,13 @@
+27a28
+> 	v2Controllers := getAvailableV2Controllers()
+33d33
+< 			v2Controllers := getAvailableV2Controllers()
+122c122,127
+< 	g.SetLinuxCgroupsPath("")
+---
+> 	// Only clear the cgroup path when cgroup v2 delegation is not available.
+> 	// Without delegation the computed cgroup parent is not writable, so it must
+> 	// be cleared to let the runtime place the container in a cgroup it owns.
+> 	if len(v2Controllers) == 0 {
+> 		g.SetLinuxCgroupsPath("")
+> 	}
