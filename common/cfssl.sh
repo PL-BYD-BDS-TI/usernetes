@@ -138,6 +138,10 @@ create_kubeconfig ${master_d}/kube-scheduler.kubeconfig system:kube-scheduler ht
 cfssl_gencert_master "kube-subnet-mgr"
 create_kubeconfig ${master_d}/kube-subnet-mgr.kubeconfig system:kube-subnet-mgr https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-subnet-mgr.pem ${master_d}/kube-subnet-mgr-key.pem
 
+# The Network Policies Client Certificate
+cfssl_gencert_master "kube-network-policies"
+create_kubeconfig ${master_d}/kube-network-policies.kubeconfig system:kube-network-policies https://${master}:6443 ${master_d}/ca.pem ${master_d}/kube-network-policies.pem ${master_d}/kube-network-policies-key.pem
+
 # The Kubernetes API Server Certificate
 if [[ -f "${master_d}/kubernetes.pem" ]]; then
 	log::info "Already exists: ${master_d}/kubernetes.pem"
@@ -216,6 +220,9 @@ EOF
 	# The kube-subnet-mgr Kubernetes Configuration File
 	log::info "Copying ${master_d}/kube-subnet-mgr.kubeconfig to ${node_d}/kube-subnet-mgr.kubeconfig"
 	cp -f ${master_d}/kube-subnet-mgr.kubeconfig ${node_d}/kube-subnet-mgr.kubeconfig
+	# The kube-network-policies Kubernetes Configuration File
+	log::info "Copying ${master_d}/kube-network-policies.kubeconfig to ${node_d}/kube-network-policies.kubeconfig"
+	cp -f ${master_d}/kube-network-policies.kubeconfig ${node_d}/kube-network-policies.kubeconfig
 	# The kubelet Kubernetes Configuration File
 	create_kubeconfig ${node_d}/node.kubeconfig ${nodename} https://${master}:6443 ${node_d}/ca.pem ${node_d}/node.pem ${node_d}/node-key.pem
 

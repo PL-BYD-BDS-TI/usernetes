@@ -438,6 +438,17 @@ ExecStart=${base}/boot/kube-proxy.sh
 ${service_common}
 EOF
 
+	cat <<EOF | x u7s-kube-network-policies.service
+[Unit]
+Description=Usernetes kube-network-policies service
+BindsTo=u7s-kube-apiserver.service
+PartOf=u7s-node.target
+
+[Service]
+ExecStart=${base}/boot/kube-network-policies.sh
+${service_common}
+EOF
+
 	if [ "$cni" = "flannel" ]; then
 		cat <<EOF | x u7s-flanneld.service
 [Unit]
@@ -472,6 +483,11 @@ export PATH KUBECONFIG
 INFO "Setting up ClusterRole and ClusterRoleBinding for 'system:kube-subnet-mgr' (flannel)"
 set -x
 kubectl apply -f ${base}/manifests/kube-subnet-mgr.yaml
+set +x
+
+INFO "Setting up ClusterRole and ClusterRoleBinding for 'system:kube-network-policies' (netpol)"
+set -x
+kubectl apply -f ${base}/manifests/kube-network-policies.yaml
 set +x
 
 INFO "Setting up ClusterRoleBinding between user 'kubernetes' and cluster role 'system:kubelet-api-admin'"

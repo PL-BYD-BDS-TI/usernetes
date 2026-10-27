@@ -19,6 +19,7 @@ ARG KUBE_GIT_VERSION=v1.37.1
 ARG CNI_PLUGINS_RELEASE=v1.9.1
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel3
 ARG FLANNEL_RELEASE=v0.28.10
+ARG KUBE_NETWORK_POLICIES_RELEASE=v1.1.2
 ARG ETCD_RELEASE=v3.7.3
 ARG NETSY_RELEASE=1.1.1
 ARG CFSSL_RELEASE=1.7.1
@@ -122,6 +123,16 @@ RUN KUBE_STATIC_OVERRIDES=kubelet \
   make --quiet kube-proxy kubelet && \
   mkdir /out && cp _output/bin/kube* /out
 
+#### netpol (netpol-build)
+FROM common-golang-alpine-heavy AS netpol-build
+RUN git clone -q https://github.com/kubernetes-sigs/kube-network-policies.git /go/src/github.com/kubernetes-sigs/kube-network-policies
+WORKDIR /go/src/github.com/kubernetes-sigs/kube-network-policies
+ARG KUBE_NETWORK_POLICIES_RELEASE
+RUN git pull && git checkout ${KUBE_NETWORK_POLICIES_RELEASE}
+ENV CGO_ENABLED=0
+RUN make build-standard && \
+  mkdir /out && cp bin/kube-network-policies-standard /out/netpol
+
 #### flannel (flannel-build)
 FROM common-golang-alpine-heavy AS flannel-build
 RUN git clone -q https://github.com/flannel-io/flannel.git /go/src/github.com/coreos/flannel
@@ -167,6 +178,7 @@ COPY --from=cniplugins-build /out/cni /cni
 COPY --from=kube-master-build /out/* /
 COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
+COPY --from=netpol-build /out/* /
 COPY --from=etcd-build /out/* /
 COPY --from=netsy-build /out/* /
 COPY --from=cfssl-build /out/* /
