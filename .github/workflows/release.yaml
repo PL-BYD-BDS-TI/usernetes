@@ -24,7 +24,7 @@ jobs:
           draft: true
           preserve_order: true
       - name: "Upload SHA256SUMS (artifact)"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SHA256SUMS
           path: _artifact/SHA256SUMS
