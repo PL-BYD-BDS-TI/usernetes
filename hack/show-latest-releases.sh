@@ -57,6 +57,7 @@ y KUBE_GIT_VERSION kubernetes/kubernetes
 x CNI_PLUGINS_RELEASE containernetworking/plugins
 y FLANNEL_CNI_PLUGIN_RELEASE flannel-io/cni-plugin
 x FLANNEL_RELEASE flannel-io/flannel
+x KUBE_NETWORK_POLICIES_RELEASE kubernetes-sigs/kube-network-policies
 z ETCD_RELEASE etcd-io/etcd
 z NETSY_RELEASE netsy-dev/netsy
 x CFSSL_RELEASE cloudflare/cfssl
