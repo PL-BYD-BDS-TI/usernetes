@@ -388,8 +388,8 @@ if [ -n "$cri" ]; then
 	cat <<EOF | x u7s-node.target
 [Unit]
 Description=Usernetes target for Kubernetes node components (${cri})
-Requires=$([ "$cri" = "containerd" ] && echo u7s-containerd-fuse-overlayfs-grpc.service) u7s-kubelet-${cri}.service u7s-kube-proxy.service $([ "$cni" = "flannel" ] && echo u7s-flanneld.service)
-After=u7s-kubelet-${cri}.service $([ "$cri" = "containerd" ] && echo u7s-containerd-fuse-overlayfs-grpc.service) u7s-kube-proxy.service $([ "$cni" = "flannel" ] && echo u7s-flanneld.service)
+Requires=$([ "$cri" = "containerd" ] && echo u7s-containerd-fuse-overlayfs-grpc.service) u7s-kubelet-${cri}.service u7s-kube-proxy.service u7s-kube-network-policies.service $([ "$cni" = "flannel" ] && echo u7s-flanneld.service)
+After=u7s-kubelet-${cri}.service $([ "$cri" = "containerd" ] && echo u7s-containerd-fuse-overlayfs-grpc.service) u7s-kube-proxy.service u7s-kube-network-policies.service $([ "$cni" = "flannel" ] && echo u7s-flanneld.service)
 PartOf=u7s.target
 
 [Install]

@@ -1,0 +1,15 @@
+{
+  "CN": "system:kube-network-policies",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "PL",
+      "L": "Bydgoszcz",
+      "O": "system:kube-network-policies",
+      "OU": "Kubernetes The Hard Way"
+    }
+  ]
+}
