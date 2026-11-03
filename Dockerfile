@@ -23,6 +23,7 @@ ARG KUBE_NETWORK_POLICIES_RELEASE=v1.1.3
 ARG ETCD_RELEASE=v3.7.3
 ARG CFSSL_RELEASE=1.7.1
 ARG WG_TOOLS_RELEASE=v1.0.20260223
+ARG CRI_TOOLS_RELEASE=v1.37.0
 
 ARG ALPINE_RELEASE=3.24
 ARG GO_RELEASE=1.27.3
@@ -80,6 +81,16 @@ ADD crio_rootless_linux.patch crio_rootless_linux.patch
 RUN git pull && git checkout ${CRIO_COMMIT} && patch server/rootless_linux.go crio_rootless_linux.patch
 RUN EXTRA_LDFLAGS='-linkmode external -extldflags "-static"' make binaries && \
   mkdir /out && cp bin/crio bin/pinns /out
+
+### CRI-Tools (cri-tools-build)
+FROM common-golang-alpine-heavy AS cri-tools-build
+RUN git clone -q https://github.com/kubernetes-sigs/cri-tools.git /go/src/github.com/kubernetes-sigs/cri-tools
+WORKDIR /go/src/github.com/kubernetes-sigs/cri-tools
+ARG CRI_TOOLS_RELEASE
+RUN git pull && git checkout ${CRI_TOOLS_RELEASE}
+RUN CGO_ENABLED=1 go build -mod=vendor -o /out/crictl \
+  -ldflags ' -X sigs.k8s.io/cri-tools/pkg/version.Version=1.37.0 -linkmode external -extldflags "-static"' \
+  sigs.k8s.io/cri-tools/cmd/crictl
 
 ### conmon (conmon-build)
 FROM common-golang-alpine-heavy AS conmon-build
@@ -165,6 +176,7 @@ COPY --from=rootlesskit-build /out/* /
 COPY --from=fuse-overlayfs-build /out/* /
 COPY --from=crun-build /out/* /
 COPY --from=crio-build /out/* /
+COPY --from=cri-tools-build /out/* /
 COPY --from=conmon-build /out/* /
 COPY --from=cniplugins-build /out/cni /cni
 COPY --from=kube-master-build /out/* /
