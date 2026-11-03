@@ -5,7 +5,7 @@
 # use ./hack/show-latest-releases.sh to get the latest releases
 
 ARG ROOTLESSKIT_COMMIT=v3.3.0
-ARG CRIO_COMMIT=v1.37.2
+ARG CRIO_COMMIT=v1.37.3
 
 ARG KUBE_NODE_COMMIT=v1.37.2
 
@@ -19,9 +19,8 @@ ARG KUBE_GIT_VERSION=v1.37.2
 ARG CNI_PLUGINS_RELEASE=v1.9.1
 ARG FLANNEL_CNI_PLUGIN_RELEASE=v1.9.1-flannel3
 ARG FLANNEL_RELEASE=v0.28.10
-ARG KUBE_NETWORK_POLICIES_RELEASE=v1.1.2
+ARG KUBE_NETWORK_POLICIES_RELEASE=v1.1.3
 ARG ETCD_RELEASE=v3.7.3
-ARG NETSY_RELEASE=1.1.1
 ARG CFSSL_RELEASE=1.7.1
 ARG WG_TOOLS_RELEASE=v1.0.20260223
 
@@ -150,13 +149,6 @@ RUN mkdir /tmp-etcd /out && \
   wget -q -O - https://github.com/etcd-io/etcd/releases/download/${ETCD_RELEASE}/etcd-${ETCD_RELEASE}-linux-amd64.tar.gz | tar xz -C /tmp-etcd && \
   cp /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcd /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdctl /tmp-etcd/etcd-${ETCD_RELEASE}-linux-amd64/etcdutl /out
 
-#### netsy (netsy-build)
-FROM common-alpine AS netsy-build
-ARG NETSY_RELEASE
-RUN mkdir /tmp-netsy /out && \
-  wget -q -O - https://github.com/netsy-dev/netsy/releases/download/v${NETSY_RELEASE}/netsy_${NETSY_RELEASE}_linux_amd64.tar.gz | tar xz -C /tmp-netsy && \
-  cp /tmp-netsy/netsy /out
-
 #### cfssl (cfssl-build)
 FROM common-alpine AS cfssl-build
 ARG CFSSL_RELEASE
@@ -180,7 +172,6 @@ COPY --from=kube-node-build /out/* /
 COPY --from=flannel-build /out/* /
 COPY --from=netpol-build /out/* /
 COPY --from=etcd-build /out/* /
-COPY --from=netsy-build /out/* /
 COPY --from=cfssl-build /out/* /
 
 #### Test (test-main)

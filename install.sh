@@ -51,16 +51,12 @@ function usage() {
 	echo
 #	echo "  --cri=RUNTIME       Specify CRI runtime, \"crio\" or \"containerd\". (Default: \"$cri\")"
 #	echo "  --cni=RUNTIME       Specify CNI, an empty string (none) or \"flannel\". (Default: \"$cni\")"
-	echo "  --db=DBTYPE         Specify KV database type, \"etcd\" or \"netsy\". (Default: \"$db\")"
 	echo "  -p, --publish=PORT  Publish ports in RootlessKit's network namespace, e.g. \"0.0.0.0:10250:10250/tcp\". Can be specified multiple times. (Default: \"${publish_default}\")"
 #	echo "  --cidr=CIDR         Specify CIDR of RootlessKit's network namespace, e.g. \"10.0.100.0/24\". (Default: \"$cidr\")"
 	echo
 	echo "Examples:"
 	echo "  # The default options"
 	echo "  ${arg0}"
-	echo
-	echo "  # Use netsy as the underlying database type"
-	echo "  ${arg0} --db=netsy"
 	echo
 	echo 'Use `uninstall.sh` for uninstallation.'
 	echo 'For an example of multi-node cluster with flannel, see docker-compose.yaml'
@@ -113,18 +109,18 @@ while true; do
 	# 	esac
 	# 	shift 2
 	# 	;;
-	--db)
-		db="$2"
-		case "$db" in
-		"etcd" | "netsy") ;;
+	# --db)
+	# 	db="$2"
+	# 	case "$db" in
+	# 	"etcd") ;;
 
-		*)
-			ERROR "Unknown DB type \"$db\". Supported values: \"etcd\" (default) \"netsy\" \"\"."
-			exit 1
-			;;
-		esac
-		shift 2
-		;;
+	# 	*)
+	# 		ERROR "Unknown DB type \"$db\". Supported values: \"etcd\" (default) \"\"."
+	# 		exit 1
+	# 		;;
+	# 	esac
+	# 	shift 2
+	# 	;;
 	# --cidr)
 	# 	cidr="$2"
 	# 	shift 2
@@ -248,18 +244,13 @@ elif [[ ! -d ${config_dir}/usernetes/master ]]; then
 fi
 
 # Configure backend db cluster for kubernetes
-if [ "$db" = "etcd" ]; then
-	mkdir -p "${config_dir}/usernetes/etcd"
-	# Create env file with initial parameters for etcd cluster
-	cat <<EOF >>${config_dir}/usernetes/etcd/env
+mkdir -p "${config_dir}/usernetes/etcd"
+# Create env file with initial parameters for etcd cluster
+cat <<EOF >>${config_dir}/usernetes/etcd/env
 ETCD_INITIAL_CLUSTER="$(while read n; do awk -F',' '{print $1"=https://"$2":2380";}' <<< "$n"; done <"${config_dir}/usernetes/master/nodes" | tr '\n' ',' | sed -e 's/,*$//g')"
 ETCD_INITIAL_CLUSTER_TOKEN="$(<"${config_dir}/usernetes/master/token")"
 ETCD_INITIAL_CLUSTER_STATE=new
 EOF
-elif [ "$db" = "netsy" ]; then
-	# Copy netsy cluster config files
-	cp -r "${base}/config/netsy" "${config_dir}/usernetes/netsy"
-fi
 
 ### Begin installation
 INFO "Base dir: ${base}"
@@ -313,7 +304,7 @@ ${service_common}
 EOF
 fi
 
-### etcd or netsy
+### etcd
 cat <<EOF | x u7s-${db}.service
 [Unit]
 Description=Usernetes ${db} service
@@ -324,9 +315,6 @@ NotifyAccess=all
 TimeoutStartSec=300
 ExecStart=${base}/boot/${db}.sh
 ${service_common}
-EOF
-if [ "$db" = "etcd" ]; then
-	cat >> ${config_dir}/systemd/user/u7s-etcd.service <<EOF
 EnvironmentFile=${config_dir}/usernetes/etcd/env
 EOF
 fi
