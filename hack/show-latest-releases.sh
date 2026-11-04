@@ -46,9 +46,9 @@ g() {
 
 y ROOTLESSKIT_COMMIT rootless-containers/rootlesskit
 x CRIO_COMMIT cri-o/cri-o
-
+echo
 y KUBE_NODE_COMMIT kubernetes/kubernetes
-
+echo
 x CONMON_RELEASE containers/conmon
 x CRUN_RELEASE containers/crun
 x FUSE_OVERLAYFS_RELEASE containers/fuse-overlayfs
@@ -61,7 +61,8 @@ x KUBE_NETWORK_POLICIES_RELEASE kubernetes-sigs/kube-network-policies
 z ETCD_RELEASE etcd-io/etcd
 x CFSSL_RELEASE cloudflare/cfssl
 g WG_TOOLS_RELEASE https://git.zx2c4.com/wireguard-tools.git
-
-# echo ALPINE_RELEASE=
-# echo GO_RELEASE=
-# echo FEDORA_RELEASE=
+x CRI_TOOLS_RELEASE kubernetes-sigs/cri-tools
+echo
+IFS=' ' read -r -a goalpine <<< $(curl -s https://hub.docker.com/_/golang | grep -Po '[0-9]+\.[0-9]+\.[0-9]+\-alpine[0-9]+\.[0-9]+' | head -1 | sed -e 's/\-alpine/ /')
+echo ALPINE_RELEASE="${goalpine[1]}"
+echo GO_RELEASE="${goalpine[0]}"
