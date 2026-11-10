@@ -4,13 +4,13 @@ set -eu -o pipefail
 y() {
 	NAME=$1
 	REPO=$2
-	echo "$NAME=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name')"
+	echo "ARG $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name')"
 }
 
 x() {
 	NAME=$1
 	REPO=$2
-	echo $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
+	echo ARG $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
 import fileinput
 from packaging.version import Version
 versions = list()
@@ -21,10 +21,24 @@ print(versions[-1])
 ')
 }
 
+xv() {
+        NAME=$1
+        REPO=$2
+        echo ARG $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
+import fileinput
+from packaging.version import Version
+versions = list()
+for line in fileinput.input():
+    versions.append(line.strip())
+versions.sort(key=Version)
+print(versions[-1])
+' | sed -e 's/^v//')
+}
+
 z() {
 	NAME=$1
 	REPO=$2
-	echo $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
+	echo ARG $NAME=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r '.[].tag_name' | python3 -c '
 import fileinput
 import re
 from packaging.version import Version
@@ -41,7 +55,7 @@ print(versions[-1])
 g() {
 	NAME=$1
 	REPO=$2
-	echo $NAME=$(git -c 'versionsort.suffix=-' ls-remote --refs --tags --sort='v:refname' "$REPO" | tail --lines=1 | cut --delimiter='/' --fields=3)
+	echo ARG $NAME=$(git -c 'versionsort.suffix=-' ls-remote --refs --tags --sort='v:refname' "$REPO" | tail --lines=1 | cut --delimiter='/' --fields=3)
 }
 
 y ROOTLESSKIT_COMMIT rootless-containers/rootlesskit
@@ -59,10 +73,11 @@ y FLANNEL_CNI_PLUGIN_RELEASE flannel-io/cni-plugin
 x FLANNEL_RELEASE flannel-io/flannel
 x KUBE_NETWORK_POLICIES_RELEASE kubernetes-sigs/kube-network-policies
 z ETCD_RELEASE etcd-io/etcd
-x CFSSL_RELEASE cloudflare/cfssl
+xv CFSSL_RELEASE cloudflare/cfssl
 g WG_TOOLS_RELEASE https://git.zx2c4.com/wireguard-tools.git
 x CRI_TOOLS_RELEASE kubernetes-sigs/cri-tools
 echo
 IFS=' ' read -r -a goalpine <<< $(curl -s https://hub.docker.com/_/golang | grep -Po '[0-9]+\.[0-9]+\.[0-9]+\-alpine[0-9]+\.[0-9]+' | head -1 | sed -e 's/\-alpine/ /')
-echo ALPINE_RELEASE="${goalpine[1]}"
-echo GO_RELEASE="${goalpine[0]}"
+echo ARG ALPINE_RELEASE="${goalpine[1]}"
+echo ARG GO_RELEASE="${goalpine[0]}"
+
