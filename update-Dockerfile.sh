@@ -26,15 +26,21 @@ python3 -c 'import packaging' 2>/dev/null || {
 
 latest="$(bash ./hack/show-latest-releases.sh)"
 
+# Validate all values before touching the Dockerfile
+while IFS= read -r line; do
+	[[ "$line" =~ ^ARG\ ([A-Z0-9_]+)=(.*)$ ]] || continue
+	value="${BASH_REMATCH[2]}"
+	if [[ -z "$value" || "$value" == "null" || ! "$value" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+		echo >&2 "ERROR: invalid value for ${BASH_REMATCH[1]}: '$value'"
+		exit 1
+	fi
+done <<<"$latest"
+
 updated=0
 while IFS= read -r line; do
 	[[ "$line" =~ ^ARG\ ([A-Z0-9_]+)=(.*)$ ]] || continue
 	name="${BASH_REMATCH[1]}"
 	value="${BASH_REMATCH[2]}"
-	if [[ -z "$value" || "$value" == "null" || ! "$value" =~ ^[A-Za-z0-9._+-]+$ ]]; then
-		echo >&2 "ERROR: invalid value for $name: '$value'"
-		exit 1
-	fi
 	if ! grep -q "^ARG ${name}=" "$DOCKERFILE"; then
 		echo >&2 "WARNING: ARG $name not found in $DOCKERFILE, skipping"
 		continue
